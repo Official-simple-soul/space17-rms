@@ -1,0 +1,9 @@
+node_modules
+README.md
+test-results
+.next
+src/lib/supabase/database.types.ts
+pnpm-lock.yaml
+docs
+AGENTS.md
+supabase/config.jsonc

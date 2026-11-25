@@ -1,0 +1,1 @@
+-- Local-only test data. Permissions are seeded by migrations.
