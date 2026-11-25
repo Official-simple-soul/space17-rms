@@ -67,6 +67,7 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await expect(page).toHaveURL(/mfa/);
   await enrol(page);
   await expect(page).toHaveURL(/platform/);
+  await page.getByRole("button", { name: "Invite organisation" }).click();
   await page.getByLabel("Organisation admin's email").fill(ownerEmail);
   await page.getByRole("button", { name: "Create invitation" }).click();
   const link = (await page.getByTestId("invite-link").textContent())!;
@@ -97,7 +98,7 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await owner.goto(`/o/${slug}/audit`);
   await expect(owner.getByText("Organisation updated")).toBeVisible();
   await owner.goto(`/o/${slug}/members`);
-  await expect(owner.getByText("Organisation admin")).toBeVisible();
+  await expect(owner.getByRole("row", { name: /Ada Owner.*Organisation admin/ })).toBeVisible();
 
   // Reused link, foreign pages and the MFA challenge on the next sign-in.
   const stranger = await (await browser.newContext()).newPage();
@@ -117,12 +118,14 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await expect(stranger.getByLabel("Switch organisation")).toHaveCount(0);
 
   await page.goto("/platform");
-  const row = page.locator("li").filter({ hasText: `/${slug}` });
-  await row.getByText("Manage access").click();
-  await row.getByLabel("Reason").fill("Testing suspension");
   page.on("dialog", (d) => d.accept());
-  await row.getByRole("button", { name: "Suspend" }).click();
-  await expect(row.getByRole("button", { name: "Reactivate" })).toBeVisible();
+  await page.getByRole("button", { name: `Manage Acme Group ${id}` }).click();
+  await page.getByLabel("Reason").fill("Testing suspension");
+  await page.getByRole("button", { name: "Suspend" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("row", { name: new RegExp(`Acme Group ${id}`) })).toContainText(
+    /suspended/i,
+  );
   await page.screenshot({ path: "test-results/platform.png", fullPage: true });
   await owner.goto(`/o/${slug}`);
   await expect(owner.getByRole("heading", { name: /is suspended/ })).toBeVisible();
@@ -140,13 +143,13 @@ test("password reset changes the password", async ({ page, request }) => {
     .poll(async () => {
       const list = await (
         await request.get(
-          `http://127.0.0.1:54324/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
+          `${process.env.MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`,
         )
       ).json();
       if (!list.messages?.length) return false;
       body = (
         await (
-          await request.get(`http://127.0.0.1:54324/api/v1/message/${list.messages[0].ID}`)
+          await request.get(`${process.env.MAILPIT_URL}/api/v1/message/${list.messages[0].ID}`)
         ).json()
       ).Text;
       return true;

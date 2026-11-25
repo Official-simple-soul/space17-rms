@@ -19,8 +19,8 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
   const steps = [
     { label: "Create your organisation", done: true },
     { label: "Turn on two-step verification", done: session.aal === "aal2", href: "/account" },
-    { label: "Add departments", done: counts.departments > 0 },
-    { label: "Invite your team", done: counts.members > 1 },
+    { label: "Add departments", done: counts.departments > 0, href: `/o/${orgSlug}/departments` },
+    { label: "Invite your team", done: counts.members > 1, href: `/o/${orgSlug}/members` },
   ];
   return (
     <>

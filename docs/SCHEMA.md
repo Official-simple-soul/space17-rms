@@ -34,7 +34,7 @@ Status: agreed, 24 November 2026. Covers Foundation and MVP. Design only; no mig
 | `member_bank_accounts` | org_id, membership_id, bank_name, account_name, account_number_encrypted, last4 | owner and authorised payers only; reads are audited |
 | `departments` | org_id, name, code, parent_id?, archived_at? | code unique per organisation; no cycles |
 | `department_members` | org_id, department_id, membership_id | unique pair |
-| `invitations` | org_id, email, department_id?, role_ids, token_hash, expires_at, accepted_at?, revoked_at?, invited_by | one open invitation per email per organisation |
+| `invitations` | org_id, email, department_id?, role_id, token_hash, expires_at, accepted_at?, revoked_at?, invited_by | one open invitation per email per organisation |
 | `join_codes` | org_id, code_hash, default_department_id?, expires_at, max_uses?, revoked_at? | off by default |
 | `join_requests` | org_id, join_code_id, email, full_name, email_verified_at?, status, expires_at, reviewed_by? | unverified, pending, approved, rejected, expired; no auth user until approval |
 

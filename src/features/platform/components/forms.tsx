@@ -48,6 +48,7 @@ export function RevokeInvite({ id }: { id: string }) {
   return (
     <ActionForm
       action={revokeInvite}
+      size="sm"
       submit="Revoke"
       variant="outline"
       className="space-y-2"
@@ -62,6 +63,7 @@ export function DeclineRequest({ id }: { id: string }) {
   return (
     <ActionForm
       action={declineRequest}
+      size="sm"
       submit="Decline"
       variant="outline"
       className="space-y-2"
@@ -76,6 +78,7 @@ export function StatusForm({ id, suspended }: { id: string; suspended: boolean }
   return (
     <ActionForm
       action={changeStatus}
+      closeOnSuccess
       submit={suspended ? "Reactivate" : "Suspend"}
       variant={suspended ? "outline" : "danger"}
       className="mt-4 space-y-3"

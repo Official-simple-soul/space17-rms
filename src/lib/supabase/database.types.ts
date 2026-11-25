@@ -57,6 +57,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"department_members": {
+                  Row: {
+                    "created_at": string,"department_id": string,"membership_id": string,"org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"department_id": string,"membership_id": string,"org_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"department_id"?: string,"membership_id"?: string,"org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "department_members_org_id_department_id_fkey"
+      columns: ["org_id","department_id"]
+isOneToOne: false
+      referencedRelation: "departments"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "department_members_org_id_membership_id_fkey"
+      columns: ["org_id","membership_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 },"departments": {
                   Row: {
                     "archived_at": string | null,"code": string,"created_at": string,"id": string,"name": string,"org_id": string,"parent_id": string | null,"updated_at": string
@@ -80,6 +106,44 @@ isOneToOne: false
       columns: ["org_id","parent_id"]
 isOneToOne: false
       referencedRelation: "departments"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"invitations": {
+                  Row: {
+                    "accepted_at": string | null,"created_at": string,"department_id": string | null,"email": string,"expires_at": string,"id": string,"invited_by": string,"org_id": string,"revoked_at": string | null,"role_id": string,"token_hash": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "accepted_at"?: string | null,"created_at"?: string,"department_id"?: string | null,"email": string,"expires_at": string,"id"?: string,"invited_by": string,"org_id": string,"revoked_at"?: string | null,"role_id": string,"token_hash": string
+                  }
+                  Update: {
+                    "accepted_at"?: string | null,"created_at"?: string,"department_id"?: string | null,"email"?: string,"expires_at"?: string,"id"?: string,"invited_by"?: string,"org_id"?: string,"revoked_at"?: string | null,"role_id"?: string,"token_hash"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "invitations_org_id_department_id_fkey"
+      columns: ["org_id","department_id"]
+isOneToOne: false
+      referencedRelation: "departments"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "invitations_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "invitations_org_id_invited_by_fkey"
+      columns: ["org_id","invited_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "invitations_org_id_role_id_fkey"
+      columns: ["org_id","role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
       referencedColumns: ["org_id","id"]
     }
                   ]
@@ -295,8 +359,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "accept_org_invite":
+            "accept_invitation":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"accept_org_invite":
 { Args: { "p_name": string,"p_slug": string,"p_token": string }; Returns: string
+                           },
+"archive_department":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
+"archive_role":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
                            },
 "create_org_invite":
 { Args: { "p_email": string }; Returns: string
@@ -304,11 +377,27 @@ isOneToOne: false
 "decline_access_request":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"department_overview":
+{ Args: { "p_org": string }; Returns: {
+              "department_id": string,"deputies": (string)[],"head": string,"people": number
+            }[]
+                           },
 "end_support_session":
 { Args: { "p_id": string }; Returns: undefined
                            },
 "grant_platform_admin":
 { Args: { "p_user": string }; Returns: undefined
+                           },
+"grant_role":
+{ Args: { "p_department"?: string,"p_membership": string,"p_org": string,"p_role": string,"p_until"?: string }; Returns: undefined
+                           },
+"invite_member":
+{ Args: { "p_department"?: string,"p_email": string,"p_org": string,"p_role": string }; Returns: string
+                           },
+"list_members":
+{ Args: { "p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_no_department"?: boolean,"p_offset"?: number,"p_org": string,"p_role"?: string,"p_search"?: string,"p_sort"?: string,"p_status"?: string }; Returns: {
+              "department_names": (string)[],"id": string,"name": string,"roles": (string)[],"status": string,"total": number
+            }[]
                            },
 "my_organisations":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -325,13 +414,41 @@ isOneToOne: false
               "full_name": string,"phone": string
             }[]
                            },
+"peek_invitation":
+{ Args: { "p_token": string }; Returns: {
+              "email": string,"has_account": boolean,"org_name": string,"state": string
+            }[]
+                           },
 "peek_org_invite":
 { Args: { "p_token": string }; Returns: {
               "email": string,"has_account": boolean,"state": string
             }[]
                            },
+"revoke_invitation":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
 "revoke_org_invite":
 { Args: { "p_id": string }; Returns: undefined
+                           },
+"revoke_role":
+{ Args: { "p_grant": string,"p_org": string }; Returns: undefined
+                           },
+"role_overview":
+{ Args: { "p_org": string }; Returns: {
+              "people": number,"role_id": string
+            }[]
+                           },
+"save_department":
+{ Args: { "p_code": string,"p_id": string,"p_name": string,"p_org": string,"p_parent": string }; Returns: string
+                           },
+"save_role":
+{ Args: { "p_id": string,"p_name": string,"p_org": string,"p_permissions": Json }; Returns: string
+                           },
+"set_member_departments":
+{ Args: { "p_departments": (string)[],"p_membership": string,"p_org": string,"p_primary": string }; Returns: undefined
+                           },
+"set_member_status":
+{ Args: { "p_membership": string,"p_org": string,"p_reason": string,"p_status": string }; Returns: undefined
                            },
 "set_organisation_suspended":
 { Args: { "p_org": string,"p_reason": string,"p_suspended": boolean }; Returns: undefined

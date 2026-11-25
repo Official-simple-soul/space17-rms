@@ -16,6 +16,23 @@ const MESSAGES: Record<string, string> = {
   invalid_timezone: "Choose a valid timezone.",
   reason_required: "Give a reason of at least 5 characters.",
   rate_limited: "Too many requests right now. Try again later.",
+  last_admin: "The organisation must keep at least one admin.",
+  department_required: "Choose a department for this role.",
+  hod_exists:
+    "This department already has a head. Remove them first, or set an end date to add a deputy.",
+  invalid_date: "Choose a date in the future.",
+  department_cycle: "A department can't sit inside itself.",
+  department_in_use: "Move its people, sub-departments and open invitations first.",
+  department_role_active: "Remove this person's role in that department first.",
+  primary_department: "The main department must be one of the selected departments.",
+  invalid_permissions: "Some permissions aren't valid.",
+  mixed_scopes: "A role can cover a department or the whole organisation, not both.",
+  admin_role_locked: "The admin role can't be changed.",
+  role_scope_in_use:
+    "People hold this role, so it can't switch between department and organisation.",
+  role_in_use: "Remove this role from people and open invitations first.",
+  own_access: "You can't change your own access.",
+  already_member: "This person is already in the organisation.",
   not_found: "That item no longer exists or has already changed.",
 };
 

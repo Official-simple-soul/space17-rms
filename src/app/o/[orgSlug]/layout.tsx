@@ -12,6 +12,8 @@ export default async function OrganisationLayout({
   const base = `/o/${orgSlug}`;
   const items: NavItem[] = [{ href: base, label: "Dashboard", icon: "dashboard", exact: true }];
   items.push({ href: `${base}/members`, label: "People", icon: "members" });
+  items.push({ href: `${base}/departments`, label: "Departments", icon: "departments" });
+  if (can("roles.manage")) items.push({ href: `${base}/roles`, label: "Roles", icon: "roles" });
   if (can("org.manage"))
     items.push({ href: `${base}/settings`, label: "Settings", icon: "settings" });
   if (can("audit.view")) items.push({ href: `${base}/audit`, label: "Audit log", icon: "audit" });

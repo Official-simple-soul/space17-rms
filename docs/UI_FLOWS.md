@@ -152,4 +152,4 @@ Security and support notices cannot be turned off.
 
 ## 12. Shared states
 
-Each list has loading, empty, no-results, error and no-permission states. Lists use server pagination, filters kept in the URL, and cards on mobile. An edit conflict shows the newer version before the user retries.
+Lists share one data view: the page header holds Add; the toolbar holds search, filters, sort and a list (table) or grid (cards) toggle that is remembered. Add and edit open in a side panel. Each list has loading, empty, no-results, error and no-permission states. Filters stay in the URL. Short lists filter in the browser; people, requests, expenses and the full audit history use server pagination, search, filters and sorting. Tables hide secondary columns on mobile. An edit conflict shows the newer version before the user retries.

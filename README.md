@@ -23,7 +23,8 @@ Open http://127.0.0.1:3100. Local email is at http://127.0.0.1:54324.
 | `pnpm lint`, `pnpm typecheck` | Code quality |
 | `pnpm test` | Unit tests |
 | `pnpm test:db` | RLS and database rules |
-| `pnpm test:e2e` | Browser flows; needs `pnpm exec playwright install chromium` |
+| `pnpm test:e2e` | Browser flows on a separate, disposable database; needs `pnpm exec playwright install chromium` |
+| `pnpm test:e2e:stop` | Stops and removes the test database |
 
 ## Structure
 

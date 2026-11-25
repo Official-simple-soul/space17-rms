@@ -3,6 +3,8 @@
 import {
   Building2,
   Gauge,
+  KeyRound,
+  Network,
   ScrollText,
   Settings2,
   ShieldCheck,
@@ -16,6 +18,8 @@ import { cn } from "@/lib/utils";
 const ICONS = {
   dashboard: Gauge,
   members: Users,
+  departments: Network,
+  roles: KeyRound,
   settings: Settings2,
   audit: ScrollText,
   organisation: Building2,
@@ -26,7 +30,9 @@ export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; e
 export function NavLinks({ items, mobile }: { items: NavItem[]; mobile?: boolean }) {
   const path = usePathname();
   return (
-    <ul className={mobile ? "flex justify-around" : "space-y-1"}>
+    <ul
+      className={mobile ? "flex [justify-content:safe_space-around] overflow-x-auto" : "space-y-1"}
+    >
       {items.map(({ href, label, icon, exact }) => {
         const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
         const Icon = ICONS[icon];

@@ -2,6 +2,8 @@ node_modules
 README.md
 test-results
 .next
+.next-test
+.test-stack
 src/lib/supabase/database.types.ts
 pnpm-lock.yaml
 docs
