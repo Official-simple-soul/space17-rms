@@ -1,4 +1,12 @@
-import { Building2, CircleCheck, FileText, ShieldCheck, Undo2, Users } from "lucide-react";
+import {
+  Banknote,
+  Building2,
+  CircleCheck,
+  FileText,
+  ShieldCheck,
+  Undo2,
+  Users,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buttonStyles } from "@/components/ui/button";
@@ -37,6 +45,19 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
             href: `${base}/requests?status=returned`,
           },
         ]
+      : []),
+    ...(work.to_confirm > 0
+      ? [
+          {
+            label: "Payments to confirm",
+            value: work.to_confirm,
+            icon: Banknote,
+            href: `${base}/requests`,
+          },
+        ]
+      : []),
+    ...(can("payments.record")
+      ? [{ label: "Payments due", value: work.to_pay, icon: Banknote, href: `${base}/payments` }]
       : []),
     ...(can("requests.approve")
       ? [

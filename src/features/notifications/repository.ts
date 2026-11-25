@@ -1,16 +1,7 @@
 import "server-only";
-import { z } from "zod";
 import { loadPage, text, type Query } from "@/lib/server-page";
 import { createClient } from "@/lib/supabase/server";
-
-const payload = z
-  .object({
-    number: z.string().nullish(),
-    title: z.string(),
-    requester: z.string(),
-    actor: z.string().nullish(),
-  })
-  .partial();
+import { notificationPayload } from "./schema";
 
 export async function listNotifications(orgId: string, query: Query) {
   const supabase = await createClient();
@@ -21,6 +12,6 @@ export async function listNotifications(orgId: string, query: Query) {
       ...range,
     });
     if (error) throw new Error("Could not load notifications");
-    return data.map((n) => ({ ...n, payload: payload.catch({}).parse(n.payload) }));
+    return data.map((n) => ({ ...n, payload: notificationPayload(n.payload) }));
   });
 }

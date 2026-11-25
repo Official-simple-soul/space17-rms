@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { deliverSoon } from "@/features/notifications/deliver";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
 import { createUploadUrl, deleteFiles, inspectFile } from "@/lib/files/storage";
 import { FILE_TYPES, isFileType, MAX_FILE_SIZE } from "@/lib/files/types";
@@ -103,6 +104,7 @@ export async function submitRequest(
       message: failure(error).message,
       templateChanged: error.message === "template_changed",
     };
+  deliverSoon();
   refresh();
   return { ok: true };
 }
@@ -168,6 +170,7 @@ export async function decideRequest(_: ActionState, form: FormData): Promise<Act
   // Also refresh on failure, to show what changed when someone else acted first.
   refresh();
   if (error) return failure(error);
+  deliverSoon();
   return {
     ok: true,
     message: { approve: "Approved.", return: "Returned to the requester.", reject: "Rejected." }[
@@ -189,6 +192,7 @@ export async function reassignStep(_: ActionState, form: FormData): Promise<Acti
     p_reason: input.data.reason,
   });
   if (error) return failure(error);
+  deliverSoon();
   refresh();
   return { ok: true, message: "Approval reassigned." };
 }

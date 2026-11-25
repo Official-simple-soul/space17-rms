@@ -59,7 +59,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-block rounded-full px-2.5 py-1 text-xs font-medium first-letter:uppercase",
+        "inline-block shrink-0 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap first-letter:uppercase",
         tone === "neutral" && "bg-neutral-100 text-neutral-700",
         tone === "solid" && "bg-ink text-white",
         tone === "alert" && "bg-brand-soft text-brand-strong",

@@ -1,4 +1,4 @@
-import { MfaNotice } from "@/features/configuration/components/configuration-header";
+import { MfaNotice } from "@/components/layout/mfa-notice";
 import { requireConfiguration } from "@/lib/auth/configuration";
 
 export default async function ConfigurationLayout({

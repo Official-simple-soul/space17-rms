@@ -57,7 +57,7 @@ function InviteResult({ state }: { state: ActionState }) {
   );
 }
 
-function RoleAndDepartment({
+export function RoleAndDepartment({
   roles,
   departments,
   state,

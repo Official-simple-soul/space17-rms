@@ -123,17 +123,23 @@ isOneToOne: false
                   ]
                 },"attachments": {
                   Row: {
-                    "created_at": string,"field_key": string | null,"file_name": string,"id": string,"kind": string,"mime": string,"org_id": string,"ready_at": string | null,"removed_at": string | null,"request_id": string,"sha256": string | null,"size": number,"storage_path": string,"uploaded_by": string
+                    "created_at": string,"field_key": string | null,"file_name": string,"id": string,"kind": string,"mime": string,"org_id": string,"payment_id": string | null,"ready_at": string | null,"removed_at": string | null,"request_id": string,"sha256": string | null,"size": number,"storage_path": string,"uploaded_by": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"field_key"?: string | null,"file_name": string,"id"?: string,"kind"?: string,"mime": string,"org_id": string,"ready_at"?: string | null,"removed_at"?: string | null,"request_id": string,"sha256"?: string | null,"size": number,"storage_path": string,"uploaded_by": string
+                    "created_at"?: string,"field_key"?: string | null,"file_name": string,"id"?: string,"kind"?: string,"mime": string,"org_id": string,"payment_id"?: string | null,"ready_at"?: string | null,"removed_at"?: string | null,"request_id": string,"sha256"?: string | null,"size": number,"storage_path": string,"uploaded_by": string
                   }
                   Update: {
-                    "created_at"?: string,"field_key"?: string | null,"file_name"?: string,"id"?: string,"kind"?: string,"mime"?: string,"org_id"?: string,"ready_at"?: string | null,"removed_at"?: string | null,"request_id"?: string,"sha256"?: string | null,"size"?: number,"storage_path"?: string,"uploaded_by"?: string
+                    "created_at"?: string,"field_key"?: string | null,"file_name"?: string,"id"?: string,"kind"?: string,"mime"?: string,"org_id"?: string,"payment_id"?: string | null,"ready_at"?: string | null,"removed_at"?: string | null,"request_id"?: string,"sha256"?: string | null,"size"?: number,"storage_path"?: string,"uploaded_by"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "attachments_org_id_payment_id_fkey"
+      columns: ["org_id","payment_id"]
+isOneToOne: false
+      referencedRelation: "payments"
+      referencedColumns: ["org_id","id"]
+    },{
       foreignKeyName: "attachments_org_id_request_id_fkey"
       columns: ["org_id","request_id"]
 isOneToOne: false
@@ -165,6 +171,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "organisations"
       referencedColumns: ["id"]
+    }
+                  ]
+                },"bank_accounts": {
+                  Row: {
+                    "account_name": string,"bank_name": string,"last_digits": string,"membership_id": string,"org_id": string,"secret_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_name": string,"bank_name": string,"last_digits": string,"membership_id": string,"org_id": string,"secret_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "account_name"?: string,"bank_name"?: string,"last_digits"?: string,"membership_id"?: string,"org_id"?: string,"secret_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "bank_accounts_org_id_membership_id_fkey"
+      columns: ["org_id","membership_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
     }
                   ]
                 },"categories": {
@@ -315,6 +341,26 @@ isOneToOne: false
       referencedColumns: ["org_id","id"]
     }
                   ]
+                },"email_outbox": {
+                  Row: {
+                    "attempts": number,"created_at": string,"id": string,"last_error": string | null,"next_attempt_at": string,"notification_id": string,"sent_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attempts"?: number,"created_at"?: string,"id"?: string,"last_error"?: string | null,"next_attempt_at"?: string,"notification_id": string,"sent_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "attempts"?: number,"created_at"?: string,"id"?: string,"last_error"?: string | null,"next_attempt_at"?: string,"notification_id"?: string,"sent_at"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "email_outbox_notification_id_fkey"
+      columns: ["notification_id"]
+isOneToOne: true
+      referencedRelation: "notifications"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"invitations": {
                   Row: {
                     "accepted_at": string | null,"created_at": string,"department_id": string | null,"email": string,"expires_at": string,"id": string,"invited_by": string,"org_id": string,"revoked_at": string | null,"role_id": string,"token_hash": string
@@ -351,6 +397,58 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "roles"
       referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"join_codes": {
+                  Row: {
+                    "code": string,"created_at": string,"created_by": string,"org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"created_by": string,"org_id": string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"created_by"?: string,"org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "join_codes_org_id_created_by_fkey"
+      columns: ["org_id","created_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "join_codes_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: true
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"join_requests": {
+                  Row: {
+                    "created_at": string,"decided_at": string | null,"decided_by": string | null,"email": string,"full_name": string,"id": string,"org_id": string,"status": string,"token_expires_at": string,"token_hash": string,"verified_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"email": string,"full_name": string,"id"?: string,"org_id": string,"status"?: string,"token_expires_at": string,"token_hash": string,"verified_at"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"email"?: string,"full_name"?: string,"id"?: string,"org_id"?: string,"status"?: string,"token_expires_at"?: string,"token_hash"?: string,"verified_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "join_requests_org_id_decided_by_fkey"
+      columns: ["org_id","decided_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "join_requests_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
     }
                   ]
                 },"membership_roles": {
@@ -516,6 +614,70 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"payment_confirmations": {
+                  Row: {
+                    "confirmed_at": string,"confirmed_by": string,"org_id": string,"payment_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confirmed_at"?: string,"confirmed_by": string,"org_id": string,"payment_id": string
+                  }
+                  Update: {
+                    "confirmed_at"?: string,"confirmed_by"?: string,"org_id"?: string,"payment_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payment_confirmations_org_id_confirmed_by_fkey"
+      columns: ["org_id","confirmed_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "payment_confirmations_org_id_payment_id_fkey"
+      columns: ["org_id","payment_id"]
+isOneToOne: false
+      referencedRelation: "payments"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"payments": {
+                  Row: {
+                    "amount_minor": number,"created_at": string,"id": string,"method": string,"note": string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id": string | null,"payee_name": string,"recorded_by": string,"reference": string | null,"request_id": string,"status": string,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_minor": number,"created_at"?: string,"id"?: string,"method": string,"note"?: string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id"?: string | null,"payee_name": string,"recorded_by": string,"reference"?: string | null,"request_id": string,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Update: {
+                    "amount_minor"?: number,"created_at"?: string,"id"?: string,"method"?: string,"note"?: string | null,"number"?: string,"org_id"?: string,"paid_on"?: string,"payee_membership_id"?: string | null,"payee_name"?: string,"recorded_by"?: string,"reference"?: string | null,"request_id"?: string,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payments_org_id_payee_membership_id_fkey"
+      columns: ["org_id","payee_membership_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "payments_org_id_recorded_by_fkey"
+      columns: ["org_id","recorded_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "payments_org_id_request_id_fkey"
+      columns: ["org_id","request_id"]
+isOneToOne: false
+      referencedRelation: "requests"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "payments_org_id_voided_by_fkey"
+      columns: ["org_id","voided_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    }
                   ]
                 },"permissions": {
                   Row: {
@@ -866,6 +1028,11 @@ isOneToOne: false
 "add_starter_configuration":
 { Args: { "p_org": string }; Returns: undefined
                            },
+"approve_join_request":
+{ Args: { "p_department"?: string,"p_id": string,"p_org": string,"p_role": string }; Returns: {
+              "email": string,"token": string
+            }[]
+                           },
 "archive_category":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
                            },
@@ -886,8 +1053,16 @@ isOneToOne: false
               "kind": string,"label": string,"value": string
             }[]
                            },
+"claim_emails":
+{ Args: { "p_limit"?: number }; Returns: {
+              "attempt": number,"email": string,"id": string,"name": string,"org_name": string,"org_slug": string,"payload": Json,"request_id": string,"type": string
+            }[]
+                           },
 "comment_on_request":
 { Args: { "p_body": string,"p_id": string }; Returns: undefined
+                           },
+"confirm_payment":
+{ Args: { "p_id": string }; Returns: undefined
                            },
 "create_org_invite":
 { Args: { "p_email": string }; Returns: string
@@ -915,10 +1090,16 @@ isOneToOne: false
 "finish_attachment":
 { Args: { "p_id": string,"p_sha256": string,"p_size": number }; Returns: undefined
                            },
+"finish_email":
+{ Args: { "p_attempt": number,"p_error"?: string,"p_id": string,"p_ok": boolean }; Returns: undefined
+                           },
 "get_attachment":
 { Args: { "p_id": string }; Returns: {
               "file_name": string,"mime": string,"storage_path": string
             }[]
+                           },
+"get_join_code":
+{ Args: { "p_org": string }; Returns: string
                            },
 "get_pending_attachment":
 { Args: { "p_id": string }; Returns: {
@@ -947,6 +1128,11 @@ isOneToOne: false
               "action": string,"after": Json,"area": string,"at": string,"before": Json,"id": string,"person": string,"reason": string,"total": number
             }[]
                            },
+"list_join_requests":
+{ Args: { "p_org": string }; Returns: {
+              "created_at": string,"email": string,"full_name": string,"id": string
+            }[]
+                           },
 "list_members":
 { Args: { "p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_no_department"?: boolean,"p_offset"?: number,"p_org": string,"p_role"?: string,"p_search"?: string,"p_sort"?: string,"p_status"?: string }; Returns: {
               "department_names": (string)[],"id": string,"name": string,"roles": (string)[],"status": string,"total": number
@@ -957,6 +1143,16 @@ isOneToOne: false
               "created_at": string,"id": string,"payload": Json,"read_at": string,"request_id": string,"total": number,"type": string
             }[]
                            },
+"list_payable":
+{ Args: { "p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_offset"?: number,"p_org": string,"p_search"?: string,"p_sort"?: string }; Returns: {
+              "approved_minor": number,"decided_at": string,"department": string,"id": string,"is_own": boolean,"needed_by": string,"number": string,"paid_minor": number,"requester": string,"title": string,"total": number
+            }[]
+                           },
+"list_payments":
+{ Args: { "p_desc"?: boolean,"p_from"?: string,"p_limit"?: number,"p_method"?: string,"p_offset"?: number,"p_org": string,"p_search"?: string,"p_sort"?: string,"p_status"?: string,"p_to"?: string }; Returns: {
+              "amount_minor": number,"confirmed": boolean,"id": string,"method": string,"number": string,"paid_on": string,"payee": string,"reference": string,"request_id": string,"request_number": string,"status": string,"title": string,"total": number
+            }[]
+                           },
 "list_requests":
 { Args: { "p_category"?: string,"p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_offset"?: number,"p_org": string,"p_search"?: string,"p_sort"?: string,"p_status"?: string,"p_view"?: string }; Returns: {
               "approved_minor": number,"category": string,"department": string,"id": string,"number": string,"requester": string,"status": string,"submitted_at": string,"title": string,"total": number,"total_minor": number,"updated_at": string,"waiting_since": string
@@ -964,6 +1160,11 @@ isOneToOne: false
                            },
 "mark_notifications_read":
 { Args: { "p_org": string,"p_request"?: string }; Returns: undefined
+                           },
+"my_bank_account":
+{ Args: { "p_org": string }; Returns: {
+              "account_name": string,"bank_name": string,"last_digits": string,"updated_at": string
+            }[]
                            },
 "my_organisations":
 { Args: Record<PropertyKey, never>; Returns: {
@@ -982,7 +1183,7 @@ isOneToOne: false
                            },
 "my_work":
 { Args: { "p_org": string }; Returns: {
-              "approvals": number,"open_requests": number,"returned": number,"unread": number
+              "approvals": number,"join_requests": number,"open_requests": number,"returned": number,"to_confirm": number,"to_pay": number,"unread": number
             }[]
                            },
 "peek_invitation":
@@ -1003,13 +1204,25 @@ isOneToOne: false
 "reassign_step":
 { Args: { "p_membership": string,"p_reason": string,"p_step": string }; Returns: undefined
                            },
+"record_payment":
+{ Args: { "p_amount": number,"p_lock": number,"p_method": string,"p_note": string,"p_paid_on": string,"p_payee": string,"p_reference": string,"p_request": string,"p_to_requester": boolean }; Returns: string
+                           },
+"reject_join_request":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
 "remove_attachment":
 { Args: { "p_id": string }; Returns: string
+                           },
+"remove_bank_account":
+{ Args: { "p_org": string }; Returns: undefined
                            },
 "requestable_categories":
 { Args: { "p_org": string }; Returns: {
               "departments": (string)[],"id": string,"name": string
             }[]
+                           },
+"reveal_bank_account":
+{ Args: { "p_request": string }; Returns: string
                            },
 "revoke_invitation":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
@@ -1024,6 +1237,9 @@ isOneToOne: false
 { Args: { "p_org": string }; Returns: {
               "people": number,"role_id": string
             }[]
+                           },
+"save_bank_account":
+{ Args: { "p_bank": string,"p_name": string,"p_number": string,"p_org": string }; Returns: undefined
                            },
 "save_category":
 { Args: { "p_applies_to": string,"p_approvers": Json,"p_code": string,"p_departments": (string)[],"p_id": string,"p_name": string,"p_org": string,"p_requires_accounting": boolean,"p_template": string,"p_workflow": string }; Returns: string
@@ -1045,6 +1261,9 @@ isOneToOne: false
                            },
 "save_workflow":
 { Args: { "p_expected": number,"p_id": string,"p_name": string,"p_org": string,"p_steps": Json,"p_subject": string }; Returns: Json
+                           },
+"set_join_code":
+{ Args: { "p_enabled": boolean,"p_org": string }; Returns: string
                            },
 "set_member_departments":
 { Args: { "p_departments": (string)[],"p_membership": string,"p_org": string,"p_primary": string }; Returns: undefined
@@ -1068,17 +1287,31 @@ isOneToOne: false
 "start_attachment":
 { Args: { "p_field": string,"p_mime": string,"p_name": string,"p_request": string,"p_size": number }; Returns: Json
                            },
+"start_payment_proof":
+{ Args: { "p_mime": string,"p_name": string,"p_payment": string,"p_size": number }; Returns: Json
+                           },
 "start_support_session":
 { Args: { "p_org": string,"p_reason": string }; Returns: string
                            },
 "submit_access_request":
 { Args: { "p_contact_name": string,"p_email": string,"p_message": string,"p_org_name": string }; Returns: undefined
                            },
+"submit_join_request":
+{ Args: { "p_code": string,"p_email": string,"p_name": string }; Returns: {
+              "org_name": string,"token": string
+            }[]
+                           },
 "submit_request":
 { Args: { "p_id": string,"p_lock": number }; Returns: Json
                            },
 "update_organisation":
 { Args: { "p_fiscal_month": number,"p_name": string,"p_org": string,"p_timezone": string }; Returns: undefined
+                           },
+"verify_join_request":
+{ Args: { "p_token": string }; Returns: string
+                           },
+"void_payment":
+{ Args: { "p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined
                            },
 "withdraw_request":
 { Args: { "p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined

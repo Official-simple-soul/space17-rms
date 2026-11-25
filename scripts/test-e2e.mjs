@@ -47,6 +47,8 @@ const { status: code } = spawnSync(
     env: {
       ...process.env,
       E2E_STACK: "1",
+      CRON_SECRET: "test-cron-secret",
+      RESEND_API_KEY: "",
       NEXT_DIST_DIR: ".next-test",
       NEXT_PUBLIC_APP_URL: "http://127.0.0.1:3210",
       NEXT_PUBLIC_SUPABASE_URL: status.API_URL,

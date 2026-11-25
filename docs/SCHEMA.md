@@ -98,6 +98,9 @@ Comments are mandatory for return, reject and amount reductions. Amount changes 
 
 | Table | Columns | Rules |
 |---|---|---|
+| `bank_accounts` | org_id, membership_id, bank_name, account_name, last_digits, secret_id | number encrypted in the vault; each reveal audited; the owner is told of every change |
+| `email_outbox` | notification_id, status, attempts, next_attempt_at | claimed in batches with a lease; six attempts; skipped if already read or too old |
+| `join_codes`, `join_requests` | org_id, code; org_id, email, full_name, status, token_hash | one code per organisation; requests need a confirmed email, expire after 14 days and create no account before approval |
 | `payments` | org_id, number, request_id? or expense_line_id?, payee_membership_id?, payee_name, amount_minor, paid_on, method, reference?, status, recorded_by, void_reason? | exactly one target; recorded, voided |
 | `payment_confirmations` | org_id, payment_id, confirmed_by, confirmed_at, note? | one per payment |
 | `attachments` | org_id, subject columns?, kind, storage_path, mime, size, sha256, uploaded_by | exactly one subject: request, line, payment or report; vendor_receipt, purchase_photo, transfer_proof, acknowledgement, other |

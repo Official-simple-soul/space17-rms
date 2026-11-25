@@ -2,10 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
-import { env } from "@/config/env";
 import { password } from "@/features/auth";
 import { listDepartments } from "@/features/departments/repository";
+import { getOrganisation } from "@/features/organisations/repository";
 import { listRoles } from "@/features/roles/repository";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
 import { requireSession } from "@/lib/auth/session";
@@ -13,12 +14,12 @@ import { optionalId } from "@/lib/forms";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { parseInvites } from "./csv";
+import { emailInvitation, joinLink } from "./email";
 import { findInvitation } from "./repository";
 
 const org = z.object({ orgId: z.uuid() });
 const member = org.extend({ memberId: z.uuid() });
 const refresh = () => revalidatePath("/o/[orgSlug]", "layout");
-const joinLink = (token: string) => `${env.appUrl}/join/${token}`;
 
 export async function inviteMember(_: ActionState, form: FormData): Promise<ActionState> {
   const input = org
@@ -39,10 +40,14 @@ export async function inviteMember(_: ActionState, form: FormData): Promise<Acti
     p_department: v.departmentId ?? undefined,
   });
   if (error) return failure(error);
+  const { name } = await getOrganisation(v.orgId);
+  const sent = await emailInvitation(v.email, name, data);
   refresh();
   return {
     ok: true,
-    message: "Invitation created. Copy the link now; it won't be shown again.",
+    message: sent
+      ? "Invitation emailed. You can also copy the link now; it won't be shown again."
+      : "Invitation created. Copy the link now; it won't be shown again.",
     data: { links: `${v.email.toLowerCase()},${joinLink(data)}` },
   };
 }
@@ -75,6 +80,8 @@ export async function inviteMany(_: ActionState, form: FormData): Promise<Action
     };
 
   const supabase = await createClient();
+  const { name } = await getOrganisation(input.data.orgId);
+  const emails: { to: string; token: string }[] = [];
   const links: string[] = [];
   const failed: string[] = [];
   for (const row of resolved) {
@@ -85,8 +92,15 @@ export async function inviteMany(_: ActionState, form: FormData): Promise<Action
       p_department: row.department?.id,
     });
     if (error) failed.push(`${row.email}: ${failure(error).message}`);
-    else links.push(`${row.email},${joinLink(data)}`);
+    else {
+      links.push(`${row.email},${joinLink(data)}`);
+      emails.push({ to: row.email, token: data });
+    }
   }
+  // One at a time, to stay within the email provider's limits.
+  after(async () => {
+    for (const { to, token } of emails) await emailInvitation(to, name, token);
+  });
   refresh();
   return {
     ok: links.length > 0,

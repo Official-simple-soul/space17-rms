@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paymentMethod } from "@/features/payments/schema";
 import { templateFields } from "@/features/templates/schema";
 
 export const STATUSES = {
@@ -17,6 +18,13 @@ export const STATUSES = {
 export type RequestStatus = keyof typeof STATUSES;
 export const requestStatus = z.enum(Object.keys(STATUSES) as [RequestStatus, ...RequestStatus[]]);
 
+const attachment = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  mime: z.string(),
+  size: z.number(),
+  field_key: z.string().nullable(),
+});
 const named = z.object({ id: z.uuid(), name: z.string() });
 
 export const requestDetail = z.object({
@@ -48,15 +56,7 @@ export const requestDetail = z.object({
       approved_minor: z.number().nullable(),
     }),
   ),
-  attachments: z.array(
-    z.object({
-      id: z.uuid(),
-      name: z.string(),
-      mime: z.string(),
-      size: z.number(),
-      field_key: z.string().nullable(),
-    }),
-  ),
+  attachments: z.array(attachment),
   steps: z.array(
     z.object({
       id: z.uuid(),
@@ -79,6 +79,9 @@ export const requestDetail = z.object({
         "withdrawn",
         "reassigned",
         "commented",
+        "paid",
+        "payment_voided",
+        "payment_confirmed",
       ]),
       actor: z.string(),
       step: z.string().nullable(),
@@ -92,6 +95,36 @@ export const requestDetail = z.object({
   active_step: z.uuid().nullable(),
   can_comment: z.boolean(),
   already_decided: z.boolean(),
+  paid_minor: z.number(),
+  payments: z.array(
+    z.object({
+      id: z.uuid(),
+      number: z.string(),
+      payee: z.string(),
+      amount_minor: z.number(),
+      paid_on: z.string(),
+      method: paymentMethod,
+      reference: z.string().nullable(),
+      note: z.string().nullable(),
+      status: z.enum(["recorded", "voided"]),
+      recorded_by: z.string(),
+      void_reason: z.string().nullable(),
+      confirmed_at: z.string().nullable(),
+      can_add_proof: z.boolean(),
+      proofs: z.array(attachment),
+    }),
+  ),
+  can_pay: z.boolean(),
+  can_void: z.boolean(),
+  bank: z
+    .object({
+      bank_name: z.string(),
+      account_name: z.string(),
+      last_digits: z.string(),
+      updated_at: z.string(),
+    })
+    .nullable(),
+  needs_bank: z.boolean(),
 });
 export type RequestDetail = z.infer<typeof requestDetail>;
 export type Attachment = RequestDetail["attachments"][number];

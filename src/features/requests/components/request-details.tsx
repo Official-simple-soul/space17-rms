@@ -5,7 +5,7 @@ import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Attachment, RequestDetail } from "../schema";
 
-function Files({ files, base }: { files: Attachment[]; base: string }) {
+export function Files({ files, base }: { files: Attachment[]; base: string }) {
   return (
     <ul className="space-y-2">
       {files.map((f) => (
@@ -189,6 +189,9 @@ const EVENT = {
   withdrawn: "withdrew the request",
   reassigned: "reassigned the approval",
   commented: "commented",
+  paid: "recorded a payment",
+  payment_voided: "voided a payment",
+  payment_confirmed: "confirmed receiving a payment",
 } as const;
 
 export function Timeline({
@@ -204,6 +207,9 @@ export function Timeline({
         <li key={e.id} className="py-4 text-sm first:pt-0 last:pb-0">
           <p>
             <span className="font-medium">{e.actor}</span> {EVENT[e.type]}
+            {e.type.startsWith("pa") &&
+              e.amount_minor !== null &&
+              ` of ${formatMoney(e.amount_minor, currency)}`}
             {e.step && ` (${e.step})`}
             {e.type === "approved" &&
               e.amount_minor !== null &&

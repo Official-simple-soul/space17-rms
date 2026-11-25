@@ -17,6 +17,13 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
           Request access
         </Link>
       </p>
+      <p className="text-muted mt-2 text-center text-sm">
+        Have a{" "}
+        <Link className="text-ink font-medium underline underline-offset-4" href="/join">
+          join code
+        </Link>
+        ?
+      </p>
     </>
   );
 }

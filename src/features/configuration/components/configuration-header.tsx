@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { Notice, PageHeader } from "@/components/ui/surface";
+import { PageHeader } from "@/components/ui/surface";
 import { LinkTabs } from "@/components/ui/tabs";
 
 const TABS = [
@@ -9,20 +8,6 @@ const TABS = [
   { id: "numbering", label: "Numbering" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
-
-export function MfaNotice({ aal }: { aal: string }) {
-  if (aal === "aal2") return null;
-  return (
-    <div className="mb-6">
-      <Notice>
-        Two-step verification is needed to save changes.{" "}
-        <Link href="/account" className="font-medium underline">
-          Set it up
-        </Link>
-      </Notice>
-    </div>
-  );
-}
 
 export function ConfigurationHeader({
   slug,

@@ -58,6 +58,14 @@ const MESSAGES: Record<string, string> = {
     "Choose someone who can approve requests, isn't the requester and hasn't already decided.",
   too_many_files: "A request can have up to 20 files.",
   comment_required: "Write a comment.",
+  own_payment: "You can't pay your own request. Someone else must do it.",
+  overpayment: "Check the amount. It can't be more than the balance.",
+  not_payable: "This request isn't waiting for payment.",
+  invalid_paid_on: "Choose a payment date within the last year, not in the future.",
+  void_closed: "This payment can't be voided any more.",
+  too_many_proofs: "A payment can have up to 5 proof files.",
+  invalid_account: "Check the account number. Nigerian accounts have 10 digits.",
+  join_code_invalid: "That code isn't valid. Check it with your admin.",
   not_found: "That item no longer exists or has already changed.",
 };
 

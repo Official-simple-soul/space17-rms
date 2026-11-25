@@ -1,14 +1,16 @@
 import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { ProfileForm } from "@/features/account/components/profile-form";
 import { EnrolPanel } from "@/features/auth/components/mfa-panel";
-import { requireSession } from "@/lib/auth/session";
+import { listMyOrganisations, requireSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Account" };
 
 export default async function AccountPage() {
   const session = await requireSession();
+  const organisations = (await listMyOrganisations()).filter((o) => o.isOpen);
   return (
     <>
       <PageHeader title="Account" description="Your profile and sign-in security." />
@@ -30,6 +32,21 @@ export default async function AccountPage() {
             <EnrolPanel next="/account" />
           )}
         </Card>
+        {organisations.length > 0 && (
+          <Card className="p-6">
+            <h2 className="mb-3 font-semibold">Bank details</h2>
+            <ul className="divide-line divide-y text-sm">
+              {organisations.map((o) => (
+                <li key={o.id} className="flex items-center justify-between gap-3 py-3">
+                  {o.name}
+                  <Link href={`/o/${o.slug}/bank-details`} className="text-brand font-medium">
+                    Manage<span className="sr-only"> for {o.name}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
       </div>
     </>
   );

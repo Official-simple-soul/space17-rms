@@ -5,7 +5,7 @@ import { Pager } from "@/components/ui/pager";
 import { Card, EmptyState, PageHeader } from "@/components/ui/surface";
 import { LinkTabs } from "@/components/ui/tabs";
 import { MarkAllRead } from "@/features/notifications/components/mark-read";
-import { notificationMessage } from "@/features/notifications/message";
+import { notificationMessage, notificationPath } from "@/features/notifications/message";
 import { listNotifications } from "@/features/notifications/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
 import { formatDateTime } from "@/lib/format";
@@ -42,7 +42,7 @@ export default async function NotificationsPage({
             {rows.map((n) => (
               <li key={n.id}>
                 <Link
-                  href={n.request_id ? `/o/${orgSlug}/requests/${n.request_id}` : base}
+                  href={notificationPath(`/o/${orgSlug}`, n.type, n.request_id)}
                   className="flex gap-3 px-5 py-4 text-sm hover:bg-neutral-50"
                 >
                   <span

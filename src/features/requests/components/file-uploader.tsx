@@ -12,20 +12,23 @@ import type { Attachment } from "../schema";
 type Upload = { key: string; file: File; error?: string };
 
 export function FileUploader({
-  requestId,
+  requestId = "",
   field = null,
   label,
   files,
   onChange,
   before,
+  start,
 }: {
-  requestId: string;
+  requestId?: string;
   field?: string | null;
   label: string;
   files: Attachment[];
   onChange: (update: (list: Attachment[]) => Attachment[]) => void;
   /** Runs first, so the draft the file belongs to is saved. */
-  before: () => Promise<boolean>;
+  before?: () => Promise<boolean>;
+  /** Where the file belongs, when it is not the request itself. */
+  start?: (file: File) => ReturnType<typeof startUpload>;
 }) {
   const id = useId();
   const [uploads, setUploads] = useState<Upload[]>([]);
@@ -37,15 +40,16 @@ export function FileUploader({
       setUploads((list) => list.map((u) => (u.key === key ? { ...u, error: message } : u)));
     setUploads((list) => list.map((u) => (u.key === key ? { ...u, error: undefined } : u)));
     try {
-      if (!(await before())) return fail("Save the request first, then retry.");
+      if (before && !(await before())) return fail("Save the request first, then retry.");
       const file = await compressImage(original);
-      const started = await startUpload({
-        requestId,
-        field,
-        name: file.name,
-        type: file.type,
-        size: file.size,
-      });
+      const started = await (start?.(file) ??
+        startUpload({
+          requestId,
+          field,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        }));
       if (!started.ok) return fail(started.message);
       const sent = await fetch(started.url, {
         method: "PUT",

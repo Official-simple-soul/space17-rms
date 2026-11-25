@@ -3,9 +3,12 @@ import type { Metadata } from "next";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { PageHeader } from "@/components/ui/surface";
 import { LinkTabs } from "@/components/ui/tabs";
+import { env } from "@/config/env";
 import { listDepartments } from "@/features/departments/repository";
 import { BulkInviteForm, InviteForm } from "@/features/members/components/member-forms";
 import { InvitationsView, MembersView } from "@/features/members/components/members-view";
+import { JoinCodeCard, JoinRequestsView } from "@/features/members/components/join-views";
+import { getJoinSetup } from "@/features/members/join-repository";
 import { countMembers, listInvitations, listMembers } from "@/features/members/repository";
 import { listRoles } from "@/features/roles/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
@@ -22,17 +25,18 @@ export default async function MembersPage({
   const { tab } = query;
   const { organisation, can } = await getOrganisationContext(orgSlug);
   const manage = can("members.manage");
-  const [people, count, departments, roles, invitations, view] = await Promise.all([
+  const [people, count, departments, roles, invitations, joining, view] = await Promise.all([
     listMembers(organisation.id, query),
     countMembers(organisation.id),
     listDepartments(organisation.id),
     listRoles(organisation.id),
     manage ? listInvitations(organisation.id) : [],
+    manage ? getJoinSetup(organisation.id) : { code: "", requests: [] },
     getListView(),
   ]);
   const roleName = new Map(roles.map((r) => [r.id, r.name]));
   const base = `/o/${orgSlug}/members`;
-  const current = manage && tab === "invitations" ? "invitations" : "people";
+  const current = manage && (tab === "invitations" || tab === "requests") ? tab : "people";
   return (
     <>
       <PageHeader
@@ -78,10 +82,22 @@ export default async function MembersPage({
           tabs={[
             { id: "people", label: "People", count: count },
             { id: "invitations", label: "Invitations", count: invitations.length },
+            { id: "requests", label: "Join requests", count: joining.requests.length },
           ]}
         />
       )}
-      {current === "invitations" ? (
+      {current === "requests" ? (
+        <>
+          <JoinCodeCard orgId={organisation.id} code={joining.code} url={`${env.appUrl}/join`} />
+          <JoinRequestsView
+            rows={joining.requests}
+            view={view}
+            orgId={organisation.id}
+            roles={roles}
+            departments={departments}
+          />
+        </>
+      ) : current === "invitations" ? (
         <InvitationsView
           view={view}
           orgId={organisation.id}

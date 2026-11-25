@@ -10,6 +10,7 @@ writeFileSync(
     `NEXT_PUBLIC_SUPABASE_URL=${status.API_URL}`,
     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=${status.PUBLISHABLE_KEY}`,
     `SUPABASE_SECRET_KEY=${status.SECRET_KEY}`,
+    `MAILPIT_URL=${status.MAILPIT_URL ?? "http://127.0.0.1:54324"}`,
     "",
   ].join("\n"),
   { mode: 0o600 },

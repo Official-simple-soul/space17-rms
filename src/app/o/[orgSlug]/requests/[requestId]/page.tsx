@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { buttonStyles } from "@/components/ui/button";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { MarkRead } from "@/features/notifications/components/mark-read";
+import { getOrganisation } from "@/features/organisations/repository";
+import { PaymentsCard } from "@/features/payments/components/payments-card";
 import {
   CommentForm,
   DecisionPanel,
@@ -29,7 +31,8 @@ export default async function RequestPage({
 }: PageProps<"/o/[orgSlug]/requests/[requestId]">) {
   const { orgSlug, requestId } = await params;
   const { organisation, can } = await getOrganisationContext(orgSlug);
-  const [request, work] = await Promise.all([
+  const [details, request, work] = await Promise.all([
+    getOrganisation(organisation.id),
     getRequest(organisation.id, requestId),
     getMyWork(organisation.id),
   ]);
@@ -94,6 +97,21 @@ export default async function RequestPage({
           {request.already_decided && (
             <Notice>You&apos;ve approved this step. It&apos;s waiting for someone else.</Notice>
           )}
+          {request.needs_bank && (
+            <Notice>
+              <Link href={`/o/${orgSlug}/bank-details`} className="font-medium underline">
+                Add your bank details
+              </Link>{" "}
+              so you can be paid.
+            </Notice>
+          )}
+          <PaymentsCard
+            request={request}
+            filesBase={`/o/${orgSlug}/files`}
+            today={new Intl.DateTimeFormat("en-CA", { timeZone: details.timezone }).format(
+              new Date(),
+            )}
+          />
           {request.steps.length > 0 && (
             <Card className="space-y-5 p-6">
               <div className="flex items-center justify-between gap-2">

@@ -22,13 +22,25 @@ export default async function OrganisationLayout({
       icon: "approvals",
       count: work.approvals,
     });
+  if (can("payments.record") || can("payments.void"))
+    items.push({
+      href: `${base}/payments`,
+      label: "Payments",
+      icon: "payments",
+      count: work.to_pay,
+    });
   items.push({
     href: `${base}/notifications`,
     label: "Notifications",
     icon: "notifications",
     count: work.unread,
   });
-  items.push({ href: `${base}/members`, label: "People", icon: "members" });
+  items.push({
+    href: `${base}/members`,
+    label: "People",
+    icon: "members",
+    count: work.join_requests,
+  });
   items.push({ href: `${base}/departments`, label: "Departments", icon: "departments" });
   if (can("roles.manage")) items.push({ href: `${base}/roles`, label: "Roles", icon: "roles" });
   if (can("config.manage"))

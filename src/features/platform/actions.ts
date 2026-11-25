@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { env } from "@/config/env";
+import { emailOrganisationInvite } from "@/features/members/email";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
 import { createClient } from "@/lib/supabase/server";
 
@@ -17,11 +18,15 @@ export async function inviteOrganisation(_: ActionState, form: FormData): Promis
     await createClient()
   ).rpc("create_org_invite", { p_email: input.data.email });
   if (error) return failure(error);
+  const link = `${env.appUrl}/invite/${data}`;
+  const sent = await emailOrganisationInvite(input.data.email, link);
   revalidatePath("/platform");
   return {
     ok: true,
-    message: "Invitation created. Copy the link now; it won't be shown again.",
-    data: { link: `${env.appUrl}/invite/${data}` },
+    message: sent
+      ? "Invitation emailed. You can also copy the link now; it won't be shown again."
+      : "Invitation created. Copy the link now; it won't be shown again.",
+    data: { link },
   };
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Banknote,
   Bell,
   Building2,
   CircleCheck,
@@ -23,6 +24,7 @@ const ICONS = {
   dashboard: Gauge,
   requests: FileText,
   approvals: CircleCheck,
+  payments: Banknote,
   notifications: Bell,
   members: Users,
   departments: Network,

@@ -3,7 +3,15 @@ import { NextResponse, type NextRequest } from "next/server";
 import { LAST_ORG_COOKIE } from "@/config/constants";
 import { env } from "@/config/env";
 
-const PUBLIC = ["/sign-in", "/forgot-password", "/request-access", "/invite", "/join", "/auth"];
+const PUBLIC = [
+  "/sign-in",
+  "/forgot-password",
+  "/request-access",
+  "/invite",
+  "/join",
+  "/auth",
+  "/api/jobs",
+];
 
 /** Refreshes the session and does an optimistic redirect. Pages and the database still authorise. */
 export async function proxy(request: NextRequest) {

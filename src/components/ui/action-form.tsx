@@ -23,6 +23,8 @@ type Props = {
   closeOnSuccess?: boolean;
   /** Also announce failures as a toast, for forms a refresh may remove. */
   toastErrors?: boolean;
+  /** Show only the message once it succeeds. */
+  once?: boolean;
   size?: "sm" | "md";
   children?: (state: ActionState) => React.ReactNode;
 };
@@ -37,6 +39,7 @@ export function ActionForm({
   confirm,
   closeOnSuccess,
   toastErrors,
+  once,
   size,
   children,
 }: Props) {
@@ -73,13 +76,13 @@ export function ActionForm({
       }}
     >
       {state.message && <Notice tone={state.ok ? "neutral" : "alert"}>{state.message}</Notice>}
-      {children?.(state)}
+      {!(once && state.ok) && children?.(state)}
       <Button
         type="submit"
         variant={variant}
         size={size}
         loading={pending}
-        className={fullWidth ? "w-full" : undefined}
+        className={once && state.ok ? "hidden" : fullWidth ? "w-full" : undefined}
       >
         {submit}
       </Button>
