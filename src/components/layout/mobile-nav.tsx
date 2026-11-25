@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Dialog } from "radix-ui";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { isActive, NAV_ICONS, type NavItem } from "./nav-links";
+import { isActive, NAV_ICONS, NavCount, type NavItem } from "./nav-links";
 
 const SLOTS = 5;
 const tab = "flex w-full flex-col items-center gap-1 py-2.5 text-[11px] font-medium";
@@ -31,7 +31,13 @@ export function MobileNav({ items }: { items: NavItem[] }) {
               aria-current={active ? "page" : undefined}
               className={cn(tab, active ? "text-brand" : "text-muted")}
             >
-              <Icon className="size-4.5" aria-hidden />
+              <span className="relative">
+                <Icon className="size-4.5" aria-hidden />
+                <NavCount
+                  count={item.count}
+                  className="absolute -top-2 left-3 h-4 min-w-4 px-1 text-[10px]"
+                />
+              </span>
               <span className="max-w-full truncate px-0.5">{item.label}</span>
             </Link>
           </li>
@@ -68,6 +74,7 @@ export function MobileNav({ items }: { items: NavItem[] }) {
                         >
                           <Icon className="size-5" aria-hidden />
                           {item.label}
+                          <NavCount count={item.count} className="ml-auto" />
                         </Link>
                       </li>
                     );

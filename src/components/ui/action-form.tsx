@@ -21,6 +21,8 @@ type Props = {
   confirm?: { title: string; description?: string };
   /** Inside a side panel: close it and show the message as a toast. */
   closeOnSuccess?: boolean;
+  /** Also announce failures as a toast, for forms a refresh may remove. */
+  toastErrors?: boolean;
   size?: "sm" | "md";
   children?: (state: ActionState) => React.ReactNode;
 };
@@ -34,10 +36,20 @@ export function ActionForm({
   fullWidth,
   confirm,
   closeOnSuccess,
+  toastErrors,
   size,
   children,
 }: Props) {
-  const [state, dispatch, pending] = useActionState(action, {});
+  const [state, dispatch, pending] = useActionState(
+    async (previous: ActionState, data: FormData) => {
+      const result = await action(previous, data);
+      // Announced here because the refreshed page may no longer contain this form.
+      if (result.message && result.ok && closeOnSuccess) toast.success(result.message);
+      if (result.message && !result.ok && toastErrors) toast.error(result.message);
+      return result;
+    },
+    {},
+  );
   const [held, setHeld] = useState<FormData | null>(null);
   const close = useCloseDialog();
   const handled = useRef(state);
@@ -45,7 +57,6 @@ export function ActionForm({
     if (handled.current === state) return;
     handled.current = state;
     if (!state.ok || !closeOnSuccess) return;
-    if (state.message) toast.success(state.message);
     close?.();
   }, [state, close, closeOnSuccess]);
   const send = (data: FormData) => startTransition(() => dispatch(data));

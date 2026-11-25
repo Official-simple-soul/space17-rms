@@ -74,12 +74,13 @@ Category approvers are people whose `requests.approve` covers the organisation o
 |---|---|---|
 | `requests` | org_id, number?, requester_id, department_id, category_id, template_version_id?, title, purpose, form_data jsonb, total_minor, approved_minor?, needed_by?, status, submitted_at?, closed_at?, lock_version | number assigned on submission |
 | `request_items` | org_id, request_id, position, description, quantity, unit_price_minor, line_total_minor, approved_minor? | total recalculated on the server |
-| `approval_runs` | org_id, request_id? or report_id?, workflow_version_id?, run_no, status | exactly one subject; new run on resubmission; one active run |
+| `approval_runs` | org_id, request_id? or report_id?, workflow_version_id?, run_no, status, snapshot jsonb | exactly one subject; new run on resubmission; one active run |
 | `approval_steps` | org_id, run_id, position, rule jsonb, required_approvals, status | copied from the workflow at submission |
-| `approval_step_approvers` | org_id, step_id, membership_id, delegated_from? | eligibility checked again when acting |
 | `approval_actions` | org_id, step_id, membership_id, action, comment?, approved_minor? | append-only; one decision per person per step |
 
-Comments are mandatory for return and reject. Amount changes may reduce but not raise the total.
+Eligible approvers are calculated each time rather than stored, so leavers lose their say at once; submission fails if a step has too few. A holder of `config.manage` can reassign a step, with a reason. Requests and their children have no direct client access: all reads and writes go through functions. Files use a private bucket and short-lived signed links, and the server checks their content before they count.
+
+Comments are mandatory for return, reject and amount reductions. Amount changes may reduce but not raise the total.
 
 ### Reports and expenses
 
@@ -109,7 +110,7 @@ The internal receipt renderer reads only `snapshot`. The issuer is always the or
 
 | Table | Columns | Rules |
 |---|---|---|
-| `comments` | org_id, request_id? / report_id? / expense_line_id?, author_id, body | exactly one subject |
+| `request_events` | org_id, request_id, actor_id, type, step_name?, body?, amount_minor? | append-only timeline, including comments |
 | `notifications` | org_id, membership_id, type, payload jsonb, read_at?, email_status? | |
 | `audit_logs` | org_id?, actor_user_id?, action, entity_type, entity_id?, before jsonb?, after jsonb?, reason? | append-only; sensitive fields redacted |
 | `ai_usage` | org_id, membership_id, feature, units, cost_estimate? | |

@@ -1,6 +1,9 @@
-import { Building2, ShieldCheck, Users } from "lucide-react";
+import { Building2, CircleCheck, FileText, ShieldCheck, Undo2, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { buttonStyles } from "@/components/ui/button";
 import { Card, PageHeader } from "@/components/ui/surface";
+import { getMyWork } from "@/features/requests/repository";
 import { SetupChecklist, SetupWarnings } from "@/features/setup/components/setup-checklist";
 import { getSetupCounts, listSetupWarnings } from "@/features/setup/repository";
 import { describeWarning } from "@/features/setup/warnings";
@@ -12,11 +15,40 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
   const { orgSlug } = await params;
   const { session, organisation, can } = await getOrganisationContext(orgSlug);
   const manage = can("org.manage") || can("config.manage");
-  const [counts, warnings] = await Promise.all([
+  const [work, counts, warnings] = await Promise.all([
+    getMyWork(organisation.id),
     getSetupCounts(organisation.id),
     manage ? listSetupWarnings(organisation.id) : [],
   ]);
   const base = `/o/${orgSlug}`;
+  const tasks = [
+    ...(can("requests.create")
+      ? [
+          {
+            label: "Open requests",
+            value: work.open_requests,
+            icon: FileText,
+            href: `${base}/requests`,
+          },
+          {
+            label: "Returned to you",
+            value: work.returned,
+            icon: Undo2,
+            href: `${base}/requests?status=returned`,
+          },
+        ]
+      : []),
+    ...(can("requests.approve")
+      ? [
+          {
+            label: "Waiting for your approval",
+            value: work.approvals,
+            icon: CircleCheck,
+            href: `${base}/approvals`,
+          },
+        ]
+      : []),
+  ];
   const stats = [
     { label: "People", value: counts.members, icon: Users },
     { label: "Departments", value: counts.departments, icon: Building2 },
@@ -53,17 +85,36 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
       <PageHeader
         title={`Hello, ${session.name.split(" ")[0]}`}
         description={`Here's where ${organisation.name} stands.`}
+        action={
+          can("requests.create") && (
+            <Link href={`${base}/requests/new`} className={buttonStyles({ variant: "brand" })}>
+              New request
+            </Link>
+          )
+        }
       />
-      <div className="grid gap-4 sm:grid-cols-3">
-        {stats.map(({ label, value, icon: Icon }) => (
-          <Card key={label} className="p-5">
-            <div className="text-muted flex items-center justify-between text-sm">
-              {label}
-              <Icon className="size-4" aria-hidden />
-            </div>
-            <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-          </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {tasks.map(({ label, value, icon: Icon, href }) => (
+          <Link key={label} href={href} className="block">
+            <Card className="hover:border-ink p-5 transition">
+              <div className="text-muted flex items-center justify-between text-sm">
+                {label}
+                <Icon className="size-4" aria-hidden />
+              </div>
+              <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+            </Card>
+          </Link>
         ))}
+        {manage &&
+          stats.map(({ label, value, icon: Icon }) => (
+            <Card key={label} className="p-5">
+              <div className="text-muted flex items-center justify-between text-sm">
+                {label}
+                <Icon className="size-4" aria-hidden />
+              </div>
+              <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+            </Card>
+          ))}
       </div>
       {manage && (
         <>

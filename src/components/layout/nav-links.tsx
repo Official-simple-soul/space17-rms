@@ -1,7 +1,10 @@
 "use client";
 
 import {
+  Bell,
   Building2,
+  CircleCheck,
+  FileText,
   Gauge,
   KeyRound,
   Network,
@@ -18,6 +21,9 @@ import { cn } from "@/lib/utils";
 
 const ICONS = {
   dashboard: Gauge,
+  requests: FileText,
+  approvals: CircleCheck,
+  notifications: Bell,
   members: Users,
   departments: Network,
   roles: KeyRound,
@@ -27,7 +33,28 @@ const ICONS = {
   organisation: Building2,
   platform: ShieldCheck,
 } satisfies Record<string, LucideIcon>;
-export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; exact?: boolean };
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: keyof typeof ICONS;
+  exact?: boolean;
+  count?: number;
+};
+
+export function NavCount({ count, className }: { count?: number; className?: string }) {
+  if (!count) return null;
+  return (
+    <span
+      className={cn(
+        "bg-brand grid h-5 min-w-5 place-items-center rounded-full px-1.5 text-[11px] font-semibold text-white",
+        className,
+      )}
+    >
+      {count > 99 ? "99+" : count}
+      <span className="sr-only"> waiting</span>
+    </span>
+  );
+}
 
 export const NAV_ICONS: Record<NavItem["icon"], LucideIcon> = ICONS;
 
@@ -56,6 +83,7 @@ export function NavLinks({ items }: { items: NavItem[] }) {
             >
               <Icon className={cn("size-4.5", active && "text-brand")} aria-hidden />
               {item.label}
+              <NavCount count={item.count} className="ml-auto" />
             </Link>
           </li>
         );

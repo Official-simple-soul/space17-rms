@@ -42,6 +42,22 @@ const MESSAGES: Record<string, string> = {
   template_in_use: "Choose another template in the categories that use this one first.",
   workflow_in_use: "Choose another workflow in the categories that use this one first.",
   already_configured: "This organisation already has its own setup.",
+  category_unavailable: "That category isn't available to this department any more.",
+  request_locked: "This request can't be changed at this stage.",
+  stale_request: "This request has changed since you opened it. Reload to see the latest version.",
+  request_incomplete: "Add a title and say what the request is for.",
+  department_missing: "Choose a department.",
+  invalid_items: "Check the items. Each needs a description, quantity and price.",
+  invalid_amounts: "Check the amounts. They can be reduced, but not raised or all set to zero.",
+  form_invalid: "Some answers are missing or aren't valid.",
+  template_changed: "The form for this category has changed. Check your answers and submit again.",
+  not_enough_approvers:
+    "Not enough people can approve this yet. Ask an admin to add approvers for this category.",
+  own_request: "You can't decide your own request.",
+  cannot_reassign:
+    "Choose someone who can approve requests, isn't the requester and hasn't already decided.",
+  too_many_files: "A request can have up to 20 files.",
+  comment_required: "Write a comment.",
   not_found: "That item no longer exists or has already changed.",
 };
 
