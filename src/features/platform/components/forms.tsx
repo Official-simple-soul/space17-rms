@@ -52,7 +52,7 @@ export function RevokeInvite({ id }: { id: string }) {
       submit="Revoke"
       variant="outline"
       className="space-y-2"
-      confirm="Revoke this invitation?"
+      confirm={{ title: "Revoke this invitation?", description: "The link will stop working." }}
     >
       {() => <input type="hidden" name="id" value={id} />}
     </ActionForm>
@@ -67,7 +67,7 @@ export function DeclineRequest({ id }: { id: string }) {
       submit="Decline"
       variant="outline"
       className="space-y-2"
-      confirm="Decline this request?"
+      confirm={{ title: "Decline this request?" }}
     >
       {() => <input type="hidden" name="id" value={id} />}
     </ActionForm>
@@ -84,8 +84,11 @@ export function StatusForm({ id, suspended }: { id: string; suspended: boolean }
       className="mt-4 space-y-3"
       confirm={
         suspended
-          ? "Reactivate this organisation?"
-          : "Suspend this organisation? Members will lose access immediately."
+          ? { title: "Reactivate this organisation?" }
+          : {
+              title: "Suspend this organisation?",
+              description: "Members will lose access immediately.",
+            }
       }
     >
       {() => (

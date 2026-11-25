@@ -118,10 +118,10 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await expect(stranger.getByLabel("Switch organisation")).toHaveCount(0);
 
   await page.goto("/platform");
-  page.on("dialog", (d) => d.accept());
   await page.getByRole("button", { name: `Manage Acme Group ${id}` }).click();
   await page.getByLabel("Reason").fill("Testing suspension");
   await page.getByRole("button", { name: "Suspend" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Suspend" }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByRole("row", { name: new RegExp(`Acme Group ${id}`) })).toContainText(
     /suspended/i,

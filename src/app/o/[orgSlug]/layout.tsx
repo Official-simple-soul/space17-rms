@@ -14,6 +14,8 @@ export default async function OrganisationLayout({
   items.push({ href: `${base}/members`, label: "People", icon: "members" });
   items.push({ href: `${base}/departments`, label: "Departments", icon: "departments" });
   if (can("roles.manage")) items.push({ href: `${base}/roles`, label: "Roles", icon: "roles" });
+  if (can("config.manage"))
+    items.push({ href: `${base}/configuration`, label: "Configuration", icon: "configuration" });
   if (can("org.manage"))
     items.push({ href: `${base}/settings`, label: "Settings", icon: "settings" });
   if (can("audit.view")) items.push({ href: `${base}/audit`, label: "Audit log", icon: "audit" });

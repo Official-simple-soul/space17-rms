@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 export const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -69,4 +69,11 @@ export async function createOrganisation(id: string, ownerEmail: string) {
   });
   if (accepted.error) throw accepted.error;
   return `/o/acme-${id}`;
+}
+
+/** Answers the confirmation dialog. */
+export async function confirm(page: Page) {
+  const dialog = page.getByRole("alertdialog");
+  await dialog.getByRole("button").last().click();
+  await expect(dialog).toHaveCount(0);
 }

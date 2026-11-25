@@ -100,7 +100,7 @@ export default async function MembersPage({
           departments={departments}
           roles={roles}
           rows={people.rows}
-          server={{ page: people.page, pageSize: people.pageSize, total: people.total }}
+          server={people.server}
         />
       )}
     </>

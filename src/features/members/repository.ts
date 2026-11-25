@@ -1,14 +1,8 @@
 import "server-only";
-import { z } from "zod";
 import { parseSort } from "@/lib/data-view";
+import { isId, loadPage, text, type Query } from "@/lib/server-page";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-
-const PAGE_SIZE = 20;
-const isId = (value: unknown): value is string => z.uuid().safeParse(value).success;
-const text = (value: string | string[] | undefined) => (typeof value === "string" ? value : "");
-
-type Query = Record<string, string | string[] | undefined>;
 
 /** One page of everyone in the organisation. Departments group people; they never hide them. */
 export async function listMembers(orgId: string, query: Query) {
@@ -17,7 +11,7 @@ export async function listMembers(orgId: string, query: Query) {
   const department = text(query.department);
   const role = text(query.role);
   const status = text(query.status);
-  const load = async (page: number) => {
+  const { rows, server } = await loadPage(query, async (range) => {
     const { data, error } = await supabase.rpc("list_members", {
       p_org: orgId,
       p_search: text(query.q),
@@ -27,23 +21,14 @@ export async function listMembers(orgId: string, query: Query) {
       p_status: ["active", "suspended"].includes(status) ? status : undefined,
       p_sort: sort?.key,
       p_desc: sort?.desc,
-      p_limit: PAGE_SIZE,
-      p_offset: (page - 1) * PAGE_SIZE,
+      ...range,
     });
     if (error) throw new Error("Could not load people");
     return data;
-  };
-  let page = Math.min(Math.max(1, Number.parseInt(text(query.page), 10) || 1), 100_000);
-  let data = await load(page);
-  if (!data.length && page > 1) {
-    page = 1;
-    data = await load(page);
-  }
+  });
   return {
-    page,
-    pageSize: PAGE_SIZE,
-    total: data[0]?.total ?? 0,
-    rows: data.map(({ id, name, status, roles, department_names }) => ({
+    server,
+    rows: rows.map(({ id, name, status, roles, department_names }) => ({
       id,
       name,
       status,

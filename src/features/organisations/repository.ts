@@ -23,16 +23,3 @@ export async function getOrganisation(id: string) {
   if (error) throw new Error("Could not load organisation");
   return data;
 }
-
-export async function getSetupCounts(orgId: string) {
-  const supabase = await createClient();
-  const count = async (table: "memberships" | "departments" | "roles") =>
-    (await supabase.from(table).select("id", { count: "exact", head: true }).eq("org_id", orgId))
-      .count ?? 0;
-  const [members, departments, roles] = await Promise.all([
-    count("memberships"),
-    count("departments"),
-    count("roles"),
-  ]);
-  return { members, departments, roles };
-}

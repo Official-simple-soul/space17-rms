@@ -53,17 +53,20 @@ HOD and deputy are `membership_roles` grants for a department. A deputy grant ha
 
 | Table | Columns | Rules |
 |---|---|---|
-| `categories` | org_id, name, code, applies_to, template_id?, workflow_id?, archived_at? | applies_to: request, expense, both |
+| `categories` | org_id, name, code, applies_to, requires_accounting, template_id?, workflow_id?, archived_at? | applies_to: request, expense, both |
 | `category_departments` | org_id, category_id, department_id | no rows means all departments |
 | `category_approvers` | org_id, category_id, membership_id? or role_id?, department_id? | exactly one of member or role; still needs `requests.approve` |
 | `templates` | org_id, kind, name, current_version_id?, archived_at? | kind: request, expense_report, narrative_report |
-| `template_versions` | org_id, template_id, version, schema jsonb, published_at? | immutable once published |
+| `template_versions` | org_id, template_id, version, fields jsonb, published_by, published_at | immutable once published |
 | `workflows` | org_id, subject, name, current_version_id?, archived_at? | subject: request, report |
-| `workflow_versions` | org_id, workflow_id, version, published_at? | immutable once published |
-| `workflow_steps` | org_id, workflow_version_id, position, name, approver_type, role_id?, membership_id?, min_amount?, required_approvals (1) | approver_type: category_approvers, role, member; unique position |
-| `number_sequences` | org_id, document_type, period_key, prefix, next_value | row locked when issuing a number |
+| `workflow_versions` | org_id, workflow_id, version, published_by, published_at | immutable once published |
+| `workflow_steps` | org_id, workflow_version_id, position, name, approver_type, role_id?, membership_id?, min_amount_minor?, required_approvals (1) | approver_type: category_approvers, role, member; unique position |
+| `number_sequences` | org_id, document_type, prefix, reset, digits | reset: never, year, month; created with the organisation |
+| `number_counters` | org_id, document_type, period_key, last_value | private; row locked when issuing a number |
 
-A category without a workflow uses one `category_approvers` step with one approval.
+A category without a workflow uses one `category_approvers` step with one approval. At least one step of a workflow applies to every amount. Publishing checks the version the editor loaded, so an outdated page cannot overwrite a newer one.
+
+Category approvers are people whose `requests.approve` covers the organisation or the request's department, plus those with category scope who are assigned to the category. Assignment without the permission grants nothing. The setup check needs one more approver than required, in the least covered department, because nobody approves their own request.
 
 ### Requests and approvals
 

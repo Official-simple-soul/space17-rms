@@ -23,6 +23,15 @@ export function formatMoney(minor: number, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency }).format(minor / 100);
 }
 
+/** Reads a typed amount such as "12,500.50" into minor units; null when it isn't a valid amount. */
+export function parseMoney(value: string): number | null {
+  const text = value.trim().replace(/^₦\s*/, "");
+  if (!/^(\d+|\d{1,3}(,\d{3})+)(\.\d{1,2})?$/.test(text)) return null;
+  const [whole, part = ""] = text.replaceAll(",", "").split(".");
+  const minor = Number(whole) * 100 + Number(part.padEnd(2, "0"));
+  return Number.isSafeInteger(minor) ? minor : null;
+}
+
 export function slugify(value: string) {
   return value
     .normalize("NFKD")

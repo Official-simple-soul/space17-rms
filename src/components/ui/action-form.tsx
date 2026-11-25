@@ -1,9 +1,11 @@
 "use client";
 
-import { startTransition, useActionState, useEffect, useRef } from "react";
+import { AlertDialog } from "radix-ui";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ActionState } from "@/lib/action-state";
-import { Button } from "./button";
+import { ConfirmDialog } from "./alert-dialog";
+import { Button, buttonStyles } from "./button";
 import { useCloseDialog } from "./form-dialog";
 import { Notice } from "./surface";
 
@@ -15,7 +17,8 @@ type Props = {
   variant?: "primary" | "brand" | "outline" | "danger";
   className?: string;
   fullWidth?: boolean;
-  confirm?: string;
+  /** Ask before submitting. */
+  confirm?: { title: string; description?: string };
   /** Inside a side panel: close it and show the message as a toast. */
   closeOnSuccess?: boolean;
   size?: "sm" | "md";
@@ -35,6 +38,7 @@ export function ActionForm({
   children,
 }: Props) {
   const [state, dispatch, pending] = useActionState(action, {});
+  const [held, setHeld] = useState<FormData | null>(null);
   const close = useCloseDialog();
   const handled = useRef(state);
   useEffect(() => {
@@ -44,6 +48,7 @@ export function ActionForm({
     if (state.message) toast.success(state.message);
     close?.();
   }, [state, close, closeOnSuccess]);
+  const send = (data: FormData) => startTransition(() => dispatch(data));
   return (
     <form
       className={className ?? "space-y-5"}
@@ -51,9 +56,9 @@ export function ActionForm({
       // Submitting manually keeps typed values when validation fails.
       onSubmit={(event) => {
         event.preventDefault();
-        if (confirm && !window.confirm(confirm)) return;
         const data = new FormData(event.currentTarget);
-        startTransition(() => dispatch(data));
+        if (confirm) setHeld(data);
+        else send(data);
       }}
     >
       {state.message && <Notice tone={state.ok ? "neutral" : "alert"}>{state.message}</Notice>}
@@ -67,6 +72,21 @@ export function ActionForm({
       >
         {submit}
       </Button>
+      {confirm && (
+        <ConfirmDialog
+          open={held !== null}
+          onOpenChange={(open) => !open && setHeld(null)}
+          {...confirm}
+        >
+          <AlertDialog.Action
+            type="button"
+            className={buttonStyles({ variant: "brand" })}
+            onClick={() => held && send(held)}
+          >
+            {submit}
+          </AlertDialog.Action>
+        </ConfirmDialog>
+      )}
     </form>
   );
 }

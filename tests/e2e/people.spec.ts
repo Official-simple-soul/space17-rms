@@ -1,11 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { createOrganisation, enrol, password, signIn } from "./helpers";
+import { confirm, createOrganisation, enrol, password, signIn } from "./helpers";
 
 test("admin organises departments, roles and people", async ({ page, browser }) => {
   const id = `p${Date.now().toString(36)}`;
   const owner = `boss-${id}@test.local`;
   const base = await createOrganisation(id, owner);
-  page.on("dialog", (d) => d.accept());
   await signIn(page, owner);
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto("/account");
@@ -108,11 +107,13 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await page.screenshot({ path: "test-results/member.png", fullPage: true });
   await page.getByLabel("Reason to suspend").fill("On leave");
   await page.getByRole("button", { name: "Suspend", exact: true }).click();
+  await confirm(page);
   await expect(page.getByRole("button", { name: "Reactivate" })).toBeVisible();
   await head.goto(base);
   await expect(head.getByRole("heading", { name: /Your access to .* is suspended/ })).toBeVisible();
   await page.getByLabel("Reason to remove").fill("Left the company");
   await page.getByRole("button", { name: "Remove from organisation" }).click();
+  await confirm(page);
   await expect(page).toHaveURL(new RegExp(`${base}/members$`));
   await expect(page.getByRole("row", { name: /Ada Owner.*Organisation admin/ })).toBeVisible();
   await expect(page.getByText("Henry Head")).toHaveCount(0);

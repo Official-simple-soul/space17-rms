@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { Logo } from "./logo";
+import { MobileNav } from "./mobile-nav";
 import { NavLinks, type NavItem } from "./nav-links";
 
 type Props = {
@@ -57,7 +58,7 @@ export function AppShell({ items, name, email, switcher, children }: Props) {
         aria-label="Mobile"
         className="border-line bg-surface fixed inset-x-0 bottom-0 z-20 border-t px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        <NavLinks items={items} mobile />
+        <MobileNav items={items} />
       </nav>
     </div>
   );

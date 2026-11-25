@@ -68,7 +68,7 @@ export function ArchiveDepartment({ orgId, id }: { orgId: string; id: string }) 
       submit="Archive"
       variant="danger"
       className="mt-4 space-y-3"
-      confirm="Archive this department?"
+      confirm={{ title: "Archive this department?" }}
     >
       {() => (
         <>

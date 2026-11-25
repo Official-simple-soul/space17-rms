@@ -43,3 +43,11 @@ export function paginate<T>(rows: T[], page: number, size: number) {
     items: rows.slice((current - 1) * size, current * size),
   };
 }
+
+export function isDate(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^[1-9]\d{3}-\d{2}-\d{2}$/.test(value) &&
+    new Date(`${value}T00:00:00Z`).toJSON()?.slice(0, 10) === value
+  );
+}

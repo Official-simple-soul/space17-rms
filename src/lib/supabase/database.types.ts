@@ -57,6 +57,102 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"categories": {
+                  Row: {
+                    "applies_to": string,"archived_at": string | null,"code": string,"created_at": string,"id": string,"name": string,"org_id": string,"requires_accounting": boolean,"template_id": string | null,"updated_at": string,"workflow_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "applies_to"?: string,"archived_at"?: string | null,"code": string,"created_at"?: string,"id"?: string,"name": string,"org_id": string,"requires_accounting"?: boolean,"template_id"?: string | null,"updated_at"?: string,"workflow_id"?: string | null
+                  }
+                  Update: {
+                    "applies_to"?: string,"archived_at"?: string | null,"code"?: string,"created_at"?: string,"id"?: string,"name"?: string,"org_id"?: string,"requires_accounting"?: boolean,"template_id"?: string | null,"updated_at"?: string,"workflow_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "categories_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "categories_org_id_template_id_fkey"
+      columns: ["org_id","template_id"]
+isOneToOne: false
+      referencedRelation: "templates"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "categories_org_id_workflow_id_fkey"
+      columns: ["org_id","workflow_id"]
+isOneToOne: false
+      referencedRelation: "workflows"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"category_approvers": {
+                  Row: {
+                    "category_id": string,"department_id": string | null,"id": string,"membership_id": string | null,"org_id": string,"role_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category_id": string,"department_id"?: string | null,"id"?: string,"membership_id"?: string | null,"org_id": string,"role_id"?: string | null
+                  }
+                  Update: {
+                    "category_id"?: string,"department_id"?: string | null,"id"?: string,"membership_id"?: string | null,"org_id"?: string,"role_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "category_approvers_org_id_category_id_fkey"
+      columns: ["org_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "category_approvers_org_id_department_id_fkey"
+      columns: ["org_id","department_id"]
+isOneToOne: false
+      referencedRelation: "departments"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "category_approvers_org_id_membership_id_fkey"
+      columns: ["org_id","membership_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "category_approvers_org_id_role_id_fkey"
+      columns: ["org_id","role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"category_departments": {
+                  Row: {
+                    "category_id": string,"department_id": string,"org_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "category_id": string,"department_id": string,"org_id": string
+                  }
+                  Update: {
+                    "category_id"?: string,"department_id"?: string,"org_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "category_departments_org_id_category_id_fkey"
+      columns: ["org_id","category_id"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "category_departments_org_id_department_id_fkey"
+      columns: ["org_id","department_id"]
+isOneToOne: false
+      referencedRelation: "departments"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 },"department_members": {
                   Row: {
                     "created_at": string,"department_id": string,"membership_id": string,"org_id": string
@@ -211,6 +307,46 @@ isOneToOne: false
       referencedColumns: ["org_id","id"]
     }
                   ]
+                },"number_counters": {
+                  Row: {
+                    "document_type": string,"last_value": number,"org_id": string,"period_key": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "document_type": string,"last_value": number,"org_id": string,"period_key": string
+                  }
+                  Update: {
+                    "document_type"?: string,"last_value"?: number,"org_id"?: string,"period_key"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "number_counters_org_id_document_type_fkey"
+      columns: ["org_id","document_type"]
+isOneToOne: false
+      referencedRelation: "number_sequences"
+      referencedColumns: ["org_id","document_type"]
+    }
+                  ]
+                },"number_sequences": {
+                  Row: {
+                    "digits": number,"document_type": string,"org_id": string,"prefix": string,"reset": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "digits"?: number,"document_type": string,"org_id": string,"prefix": string,"reset"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "digits"?: number,"document_type"?: string,"org_id"?: string,"prefix"?: string,"reset"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "number_sequences_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"org_invites": {
                   Row: {
                     "accepted_at": string | null,"created_at": string,"created_org_id": string | null,"email": string,"expires_at": string,"id": string,"invited_by": string | null,"revoked_at": string | null,"token_hash": string
@@ -353,6 +489,142 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"template_versions": {
+                  Row: {
+                    "fields": NonNullable<Json>,"id": string,"org_id": string,"published_at": string,"published_by": string,"template_id": string,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "fields": NonNullable<Json>,"id"?: string,"org_id": string,"published_at"?: string,"published_by": string,"template_id": string,"version": number
+                  }
+                  Update: {
+                    "fields"?: NonNullable<Json>,"id"?: string,"org_id"?: string,"published_at"?: string,"published_by"?: string,"template_id"?: string,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "template_versions_org_id_published_by_fkey"
+      columns: ["org_id","published_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "template_versions_org_id_template_id_fkey"
+      columns: ["org_id","template_id"]
+isOneToOne: false
+      referencedRelation: "templates"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"templates": {
+                  Row: {
+                    "archived_at": string | null,"created_at": string,"current_version_id": string | null,"id": string,"kind": string,"name": string,"org_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"created_at"?: string,"current_version_id"?: string | null,"id"?: string,"kind": string,"name": string,"org_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"created_at"?: string,"current_version_id"?: string | null,"id"?: string,"kind"?: string,"name"?: string,"org_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "templates_id_current_version_id_fkey"
+      columns: ["id","current_version_id"]
+isOneToOne: false
+      referencedRelation: "template_versions"
+      referencedColumns: ["template_id","id"]
+    },{
+      foreignKeyName: "templates_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workflow_steps": {
+                  Row: {
+                    "approver_type": string,"id": string,"membership_id": string | null,"min_amount_minor": number | null,"name": string,"org_id": string,"position": number,"required_approvals": number,"role_id": string | null,"workflow_version_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "approver_type": string,"id"?: string,"membership_id"?: string | null,"min_amount_minor"?: number | null,"name": string,"org_id": string,"position": number,"required_approvals"?: number,"role_id"?: string | null,"workflow_version_id": string
+                  }
+                  Update: {
+                    "approver_type"?: string,"id"?: string,"membership_id"?: string | null,"min_amount_minor"?: number | null,"name"?: string,"org_id"?: string,"position"?: number,"required_approvals"?: number,"role_id"?: string | null,"workflow_version_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workflow_steps_org_id_membership_id_fkey"
+      columns: ["org_id","membership_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "workflow_steps_org_id_role_id_fkey"
+      columns: ["org_id","role_id"]
+isOneToOne: false
+      referencedRelation: "roles"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "workflow_steps_org_id_workflow_version_id_fkey"
+      columns: ["org_id","workflow_version_id"]
+isOneToOne: false
+      referencedRelation: "workflow_versions"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"workflow_versions": {
+                  Row: {
+                    "id": string,"org_id": string,"published_at": string,"published_by": string,"version": number,"workflow_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: string,"org_id": string,"published_at"?: string,"published_by": string,"version": number,"workflow_id": string
+                  }
+                  Update: {
+                    "id"?: string,"org_id"?: string,"published_at"?: string,"published_by"?: string,"version"?: number,"workflow_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workflow_versions_org_id_published_by_fkey"
+      columns: ["org_id","published_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "workflow_versions_org_id_workflow_id_fkey"
+      columns: ["org_id","workflow_id"]
+isOneToOne: false
+      referencedRelation: "workflows"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"workflows": {
+                  Row: {
+                    "archived_at": string | null,"created_at": string,"current_version_id": string | null,"id": string,"name": string,"org_id": string,"subject": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"created_at"?: string,"current_version_id"?: string | null,"id"?: string,"name": string,"org_id": string,"subject": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"created_at"?: string,"current_version_id"?: string | null,"id"?: string,"name"?: string,"org_id"?: string,"subject"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workflows_id_current_version_id_fkey"
+      columns: ["id","current_version_id"]
+isOneToOne: false
+      referencedRelation: "workflow_versions"
+      referencedColumns: ["workflow_id","id"]
+    },{
+      foreignKeyName: "workflows_org_id_fkey"
+      columns: ["org_id"]
+isOneToOne: false
+      referencedRelation: "organisations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -365,11 +637,28 @@ isOneToOne: false
 "accept_org_invite":
 { Args: { "p_name": string,"p_slug": string,"p_token": string }; Returns: string
                            },
+"add_starter_configuration":
+{ Args: { "p_org": string }; Returns: undefined
+                           },
+"archive_category":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
 "archive_department":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
                            },
 "archive_role":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
+"archive_template":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
+"archive_workflow":
+{ Args: { "p_id": string,"p_org": string }; Returns: undefined
+                           },
+"audit_filters":
+{ Args: { "p_org": string }; Returns: {
+              "kind": string,"label": string,"value": string
+            }[]
                            },
 "create_org_invite":
 { Args: { "p_email": string }; Returns: string
@@ -393,6 +682,16 @@ isOneToOne: false
                            },
 "invite_member":
 { Args: { "p_department"?: string,"p_email": string,"p_org": string,"p_role": string }; Returns: string
+                           },
+"list_approvers":
+{ Args: { "p_key": string,"p_org": string }; Returns: {
+              "id": string,"name": string
+            }[]
+                           },
+"list_audit":
+{ Args: { "p_area"?: string,"p_desc"?: boolean,"p_from"?: string,"p_limit"?: number,"p_offset"?: number,"p_org": string,"p_person"?: string,"p_search"?: string,"p_sort"?: string,"p_to"?: string }; Returns: {
+              "action": string,"after": Json,"area": string,"at": string,"before": Json,"id": string,"person": string,"reason": string,"total": number
+            }[]
                            },
 "list_members":
 { Args: { "p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_no_department"?: boolean,"p_offset"?: number,"p_org": string,"p_role"?: string,"p_search"?: string,"p_sort"?: string,"p_status"?: string }; Returns: {
@@ -438,11 +737,23 @@ isOneToOne: false
               "people": number,"role_id": string
             }[]
                            },
+"save_category":
+{ Args: { "p_applies_to": string,"p_approvers": Json,"p_code": string,"p_departments": (string)[],"p_id": string,"p_name": string,"p_org": string,"p_requires_accounting": boolean,"p_template": string,"p_workflow": string }; Returns: string
+                           },
 "save_department":
 { Args: { "p_code": string,"p_id": string,"p_name": string,"p_org": string,"p_parent": string }; Returns: string
                            },
+"save_numbering":
+{ Args: { "p_digits": number,"p_org": string,"p_prefix": string,"p_reset": string,"p_type": string }; Returns: undefined
+                           },
 "save_role":
 { Args: { "p_id": string,"p_name": string,"p_org": string,"p_permissions": Json }; Returns: string
+                           },
+"save_template":
+{ Args: { "p_expected": number,"p_fields": Json,"p_id": string,"p_kind": string,"p_name": string,"p_org": string }; Returns: Json
+                           },
+"save_workflow":
+{ Args: { "p_expected": number,"p_id": string,"p_name": string,"p_org": string,"p_steps": Json,"p_subject": string }; Returns: Json
                            },
 "set_member_departments":
 { Args: { "p_departments": (string)[],"p_membership": string,"p_org": string,"p_primary": string }; Returns: undefined
@@ -452,6 +763,16 @@ isOneToOne: false
                            },
 "set_organisation_suspended":
 { Args: { "p_org": string,"p_reason": string,"p_suspended": boolean }; Returns: undefined
+                           },
+"setup_counts":
+{ Args: { "p_org": string }; Returns: {
+              "categories": number,"departments": number,"members": number,"roles": number,"templates": number,"workflows": number
+            }[]
+                           },
+"setup_warnings":
+{ Args: { "p_org": string }; Returns: {
+              "code": string,"found": number,"needed": number,"subject": string,"subject_id": string
+            }[]
                            },
 "start_support_session":
 { Args: { "p_org": string,"p_reason": string }; Returns: string

@@ -167,7 +167,7 @@ export function RevokeInvitation({ orgId, id }: { orgId: string; id: string }) {
       submit="Revoke"
       variant="outline"
       className="space-y-2"
-      confirm="Revoke this invitation?"
+      confirm={{ title: "Revoke this invitation?", description: "The link will stop working." }}
     >
       {() => (
         <>
@@ -217,7 +217,7 @@ export function RevokeRole({ orgId, grantId }: { orgId: string; grantId: string 
       submit="Remove"
       variant="outline"
       className="space-y-2"
-      confirm="Remove this role?"
+      confirm={{ title: "Remove this role?", description: "Access ends immediately." }}
     >
       {() => (
         <>
@@ -300,8 +300,11 @@ export function StatusForm({
       className="space-y-3"
       confirm={
         to === "left"
-          ? "Remove this person? Their roles and departments will be cleared."
-          : `${label}?`
+          ? {
+              title: "Remove this person?",
+              description: "Their roles, departments and approver assignments will be cleared.",
+            }
+          : { title: `${label} this person?` }
       }
     >
       {() => (

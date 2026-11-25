@@ -30,8 +30,8 @@ The header has search, notifications and profile. Mobile uses a bottom bar: Home
 **New organisation**
 1. Superadmin enters the email and sends an invite.
 2. Recipient opens the link, sets a password and verifies MFA.
-3. Wizard: organisation → departments → roles → categories → templates → approvals → invite staff.
-4. Only organisation details are required to enter; a checklist tracks the rest.
+3. Dashboard checklist: two-step verification → departments → categories → invite staff → heads → approvers → payers. An optional starter set adds generic categories, templates and workflows.
+4. Only organisation details are required to enter; the checklist tracks the rest.
 5. The checklist warns if a category has fewer than two possible approvers, or the organisation fewer than two payers.
 
 **Invited staff:** open link → set password, or sign in if the account exists → confirm name → dashboard.

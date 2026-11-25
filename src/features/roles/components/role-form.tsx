@@ -91,7 +91,7 @@ export function ArchiveRole({ orgId, slug, id }: { orgId: string; slug: string; 
       submit="Archive role"
       variant="danger"
       className="mt-6 space-y-3"
-      confirm="Archive this role?"
+      confirm={{ title: "Archive this role?" }}
     >
       {() => (
         <>

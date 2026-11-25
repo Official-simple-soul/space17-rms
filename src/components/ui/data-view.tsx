@@ -14,7 +14,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { LIST_VIEW_COOKIE, type ListView } from "@/config/constants";
-import { paginate, parseSort, selectRows, type SortValue } from "@/lib/data-view";
+import { isDate, paginate, parseSort, selectRows, type SortValue } from "@/lib/data-view";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 import { EmptyState } from "./surface";
@@ -30,7 +30,8 @@ export type Column<T> = {
 export type Filter<T> = {
   key: string;
   label: string;
-  options: { value: string; label: string }[];
+  /** Omit for a date filter. */
+  options?: { value: string; label: string }[];
   /** Not needed when the server does the filtering. */
   match?: (row: T, value: string) => boolean;
 };
@@ -95,7 +96,8 @@ export function DataView<T>({
   const sortable = columns.filter((c) => c.sort);
   const active = filters.flatMap((f) => {
     const value = params.get(f.key);
-    return value && f.options.some((o) => o.value === value) ? [{ filter: f, value }] : [];
+    const valid = f.options ? f.options.some((o) => o.value === value) : isDate(value);
+    return value && valid ? [{ filter: f, value }] : [];
   });
   const found = server
     ? rows
@@ -187,28 +189,41 @@ export function DataView<T>({
             type="search"
             value={draft}
             onChange={(e) => changeQuery(e.target.value)}
-            placeholder={`Search ${label.toLowerCase()}`}
+            placeholder="Search"
             className={cn(control, "w-full pl-9")}
           />
         </label>
         {filters.length > 0 && (
           <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
-            {filters.map((f) => (
-              <select
-                key={f.key}
-                aria-label={`Filter by ${f.label.toLowerCase()}`}
-                value={active.find((a) => a.filter.key === f.key)?.value ?? ""}
-                onChange={(e) => update({ [f.key]: e.target.value })}
-                className={cn(control, "w-full sm:w-40")}
-              >
-                <option value="">{f.label}: All</option>
-                {f.options.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            ))}
+            {filters.map((f) =>
+              f.options ? (
+                <select
+                  key={f.key}
+                  aria-label={`Filter by ${f.label.toLowerCase()}`}
+                  value={active.find((a) => a.filter.key === f.key)?.value ?? ""}
+                  onChange={(e) => update({ [f.key]: e.target.value })}
+                  className={cn(control, "w-full sm:w-40")}
+                >
+                  <option value="">{f.label}: All</option>
+                  {f.options.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <label key={f.key} className={cn(control, "flex items-center gap-2")}>
+                  <span className="text-muted">{f.label}</span>
+                  <input
+                    type="date"
+                    aria-label={`Filter by ${f.label.toLowerCase()} date`}
+                    value={active.find((a) => a.filter.key === f.key)?.value ?? ""}
+                    onChange={(e) => update({ [f.key]: e.target.value })}
+                    className="min-w-0 flex-1 bg-transparent outline-none"
+                  />
+                </label>
+              ),
+            )}
           </div>
         )}
         <div className="flex w-full items-center justify-between gap-2 sm:ml-auto sm:w-auto">
@@ -278,7 +293,7 @@ export function DataView<T>({
                       scope="col"
                       aria-sort={direction}
                       className={cn(
-                        "px-5 py-3 font-medium whitespace-nowrap",
+                        "px-3 py-3 font-medium whitespace-nowrap sm:px-5",
                         c.hideOnMobile && "hidden md:table-cell",
                         c.align && "text-right",
                       )}
@@ -311,7 +326,7 @@ export function DataView<T>({
                     <td
                       key={c.key}
                       className={cn(
-                        "px-5 py-3.5",
+                        "px-3 py-3.5 sm:px-5",
                         c.hideOnMobile && "hidden md:table-cell",
                         c.align && "text-right",
                       )}
