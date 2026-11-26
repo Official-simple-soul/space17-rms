@@ -41,7 +41,7 @@ export function SignInForm({ next }: { next?: string }) {
 
 export function ForgotForm() {
   return (
-    <ActionForm action={requestReset} submit="Send reset link" fullWidth>
+    <ActionForm action={requestReset} keepMessage submit="Send reset link" fullWidth>
       {(state) => (
         <TextField
           label="Email"

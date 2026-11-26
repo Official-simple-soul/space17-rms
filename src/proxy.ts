@@ -51,5 +51,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|icon.svg|.*\\.(?:png|svg|jpg|webp)$).*)"],
+  matcher: ["/((?!local-storage/|_next/static|_next/image|icon.svg|.*\\.(?:png|svg|jpg|webp)$).*)"],
 };

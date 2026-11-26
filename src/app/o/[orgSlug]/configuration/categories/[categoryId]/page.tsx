@@ -10,7 +10,7 @@ import { listSetupWarnings } from "@/features/setup/repository";
 import { describeWarning } from "@/features/setup/warnings";
 import { listTemplates } from "@/features/templates/repository";
 import { listApprovers, listWorkflows } from "@/features/workflows/repository";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 
 export const metadata: Metadata = { title: "Category" };
 
@@ -18,7 +18,7 @@ export default async function CategoryPage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/categories/[categoryId]">) {
   const { orgSlug, categoryId } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const id = organisation.id;
   const [category, departments, templates, workflows, roles, people, warnings] = await Promise.all([
     getCategory(id, categoryId),

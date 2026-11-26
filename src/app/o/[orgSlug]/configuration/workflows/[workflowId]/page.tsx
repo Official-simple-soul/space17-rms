@@ -14,7 +14,7 @@ import {
 } from "@/features/workflows/components/workflow-editor";
 import { getWorkflow, listApprovers } from "@/features/workflows/repository";
 import { APPROVE_PERMISSION } from "@/features/workflows/schema";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 import { formatMoney } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Workflow" };
@@ -23,7 +23,7 @@ export default async function WorkflowPage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/workflows/[workflowId]">) {
   const { orgSlug, workflowId } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const id = organisation.id;
   const [workflow, details, roles, requestPeople, reportPeople, warnings] = await Promise.all([
     getWorkflow(id, workflowId),

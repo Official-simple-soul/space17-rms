@@ -8,6 +8,7 @@ Status: agreed, 25 November 2026. Covers Foundation and MVP. Read with [SCOPE.md
 - Every detail page answers: what is this, what is its status, who acts next, what can I do?
 - One primary action per screen. Unavailable actions are hidden, unless the reason helps ("You can't approve your own request").
 - Drafts save automatically. Failed uploads can be retried without losing the form.
+- Every action ends with visible feedback: a toast for success or failure, with errors also kept beside the form. A message that must not disappear, such as an invitation link, stays on the page.
 - Return, reject, void and waive require a reason. Final actions show a confirmation summary.
 - Status uses text and icon as well as colour. Target WCAG 2.2 AA.
 - Amounts show as ₦12,500.00; dates as 24 Nov 2026.
@@ -43,8 +44,8 @@ The header has search, notifications and profile. Mobile uses a bottom bar: Home
 ## 4. Staff
 
 **Create a request**
-1. Choose a category, filtered to the user's department.
-2. Fill in title, purpose, department, items and template fields; add attachments.
+1. One form: choose a category (filtered to the user's departments) and its questions and approvers appear. The draft saves from then on.
+2. Fill in title, purpose, department, items and template fields; add attachments. On phones and tablets, every upload also offers **Take photo**.
 3. Review the total and expected approval steps.
 4. Submit; the number and timeline appear.
 

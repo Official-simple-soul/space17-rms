@@ -62,7 +62,7 @@ Setup wizard: organisation details → departments → roles → categories and 
 1. **Auth and profile:** email/password, reset, optional Google sign-in, MFA for admins and Finance, signature, restricted bank details, sessions, notification preferences.
 2. **Organisation:** branding, currency, timezone, fiscal year. There is no separate workspace layer; a switcher appears only for people in several organisations.
 3. **Departments:** hierarchy, HOD, deputy, members. A grouping within the organisation; members can be in several or none.
-4. **People:** organisation-wide list of everyone, filterable by department; invite, assign, suspend, offboard and reassign work.
+4. **People:** organisation-wide list for those who manage or audit people, filterable by department; invite, assign, suspend, offboard and reassign work.
 5. **Configuration:** roles, permissions, categories, templates, workflows, numbering, notifications, receipt branding.
 6. **Requests:** custom forms, items, attachments, drafts, tracking.
 7. **Approvals:** sequential steps, thresholds, return, delegation; parallel steps and escalation later.

@@ -24,13 +24,32 @@ export function notificationMessage(type: string, p: NotificationPayload): strin
       return "Your bank details were changed. If this wasn't you, tell your admin now.";
     case "join_request":
       return `${p.requester ?? "Someone"} asked to join your organisation`;
+    case "expense_submitted":
+      return `${p.requester ?? "Someone"} submitted an expense: ${item}`;
+    case "expense_returned":
+      return `${actor} returned your expense: ${item}`;
+    case "expense_rejected":
+      return `${actor} rejected your expense: ${item}`;
+    case "report_submitted":
+      return `${actor} submitted an expense report: ${item}`;
+    case "report_due_soon":
+      return `Expense report due soon: ${item}`;
+    case "report_due_today":
+      return `Expense report due today: ${item}`;
+    case "report_late":
+      return `Expense report is late: ${item}`;
     default:
       return item || "You have a new notification.";
   }
 }
 
-export function notificationPath(base: string, type: string, requestId: string | null): string {
-  if (requestId) return `${base}/requests/${requestId}`;
+type Subject = { request_id: string | null; expense_id: string | null; report_id: string | null };
+
+export function notificationPath(base: string, type: string, subject: Subject): string {
+  if (subject.request_id) return `${base}/requests/${subject.request_id}`;
+  if (subject.expense_id) return `${base}/expenses/${subject.expense_id}`;
+  if (subject.report_id) return `${base}/reports/${subject.report_id}`;
+  if (type.startsWith("report_")) return `${base}/reports`;
   if (type === "bank_details_changed") return `${base}/bank-details`;
   if (type === "join_request") return `${base}/members?tab=requests`;
   return `${base}/notifications`;

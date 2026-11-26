@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { MfaNotice } from "@/components/layout/mfa-notice";
 import { PageHeader } from "@/components/ui/surface";
 import { LinkTabs } from "@/components/ui/tabs";
@@ -7,7 +6,7 @@ import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
 import { PayableView, PaymentsView } from "@/features/payments/components/payments-view";
 import { listPayable, listPayments } from "@/features/payments/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Payments" };
@@ -18,8 +17,7 @@ export default async function PaymentsPage({
 }: PageProps<"/o/[orgSlug]/payments">) {
   const { orgSlug } = await params;
   const query = await searchParams;
-  const { session, organisation, can } = await getOrganisationContext(orgSlug);
-  if (!can("payments.record") && !can("payments.void")) notFound();
+  const { session, organisation } = await requireSection(orgSlug, "payments");
   const history = query.tab === "history";
   const [details, departments, view] = await Promise.all([
     getOrganisation(organisation.id),

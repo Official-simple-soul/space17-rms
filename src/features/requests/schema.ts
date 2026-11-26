@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { attachment } from "@/features/files/schema";
 import { paymentMethod } from "@/features/payments/schema";
 import { templateFields } from "@/features/templates/schema";
 
@@ -18,13 +19,6 @@ export const STATUSES = {
 export type RequestStatus = keyof typeof STATUSES;
 export const requestStatus = z.enum(Object.keys(STATUSES) as [RequestStatus, ...RequestStatus[]]);
 
-const attachment = z.object({
-  id: z.uuid(),
-  name: z.string(),
-  mime: z.string(),
-  size: z.number(),
-  field_key: z.string().nullable(),
-});
 const named = z.object({ id: z.uuid(), name: z.string() });
 
 export const requestDetail = z.object({
@@ -127,12 +121,11 @@ export const requestDetail = z.object({
   needs_bank: z.boolean(),
 });
 export type RequestDetail = z.infer<typeof requestDetail>;
-export type Attachment = RequestDetail["attachments"][number];
 
 export const draftSchema = z.object({
   orgId: z.uuid(),
-  id: z.uuid(),
-  lock: z.number().int(),
+  id: z.uuid().nullable(),
+  lock: z.number().int().nullable(),
   categoryId: z.uuid(),
   departmentId: z.uuid().nullable(),
   title: z.string().max(120),

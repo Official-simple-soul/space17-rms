@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { readJson } from "@/lib/rpc-json";
 import { createClient } from "@/lib/supabase/server";
 import { categorySchema } from "./schema";
@@ -33,7 +33,7 @@ export async function saveCategory(_: ActionState, form: FormData): Promise<Acti
   });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  if (!v.id) redirect(`/o/${v.slug}/configuration/categories`);
+  if (!v.id) return redirectWith(`/o/${v.slug}/configuration/categories`, "Category added.");
   return { ok: true, message: "Category saved." };
 }
 
@@ -47,5 +47,5 @@ export async function archiveCategory(_: ActionState, form: FormData): Promise<A
   ).rpc("archive_category", { p_org: input.data.orgId, p_id: input.data.id });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  redirect(`/o/${input.data.slug}/configuration/categories`);
+  return redirectWith(`/o/${input.data.slug}/configuration/categories`, "Category archived.");
 }

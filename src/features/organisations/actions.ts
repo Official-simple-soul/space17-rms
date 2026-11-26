@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { requireSession } from "@/lib/auth/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -37,7 +38,7 @@ export async function registerFromInvite(_: ActionState, form: FormData): Promis
     password: input.data.password,
   });
   if (signedIn.error) redirect(`/sign-in?next=/invite/${input.data.token}`);
-  redirect(`/invite/${input.data.token}`);
+  return redirectWith(`/invite/${input.data.token}`, "Account created.");
 }
 
 export async function acceptInvite(_: ActionState, form: FormData): Promise<ActionState> {
@@ -51,7 +52,7 @@ export async function acceptInvite(_: ActionState, form: FormData): Promise<Acti
     p_slug: input.data.slug,
   });
   if (error) return failure(error);
-  redirect(`/o/${data}`);
+  return redirectWith(`/o/${data}`, "Organisation created.");
 }
 
 export async function updateOrganisation(_: ActionState, form: FormData): Promise<ActionState> {

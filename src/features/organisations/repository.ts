@@ -17,7 +17,7 @@ export async function getOrganisation(id: string) {
     await createClient()
   )
     .from("organisations")
-    .select("id, name, slug, currency, timezone, fiscal_year_start_month, status")
+    .select("id, name, slug, currency, timezone, fiscal_year_start_month, report_due_day, status")
     .eq("id", id)
     .single();
   if (error) throw new Error("Could not load organisation");

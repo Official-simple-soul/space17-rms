@@ -33,9 +33,9 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(page.getByText("Choose a department for this role.")).toBeVisible();
   await page.getByLabel("Department", { exact: true }).selectOption({ label: "Finance" });
   await page.getByRole("button", { name: "Create invitation" }).click();
-  const link = (await page.getByTestId("join-links").textContent())!.split(",")[1];
+  const link = (await page.getByTestId("join-links").textContent())!;
 
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByRole("button", { name: "Import" }).click();
   await page.getByLabel("One person per line").fill(`bad,Staff\nx-${id}@test.local,Wizard`);
   await page.getByRole("button", { name: "Check and invite" }).click();
@@ -52,11 +52,11 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await head.getByLabel("Password", { exact: true }).fill(password);
   await head.getByRole("button", { name: "Create account and join" }).click();
   await expect(head.getByRole("heading", { name: "Hello, Henry" })).toBeVisible();
-  await head.goto(`${base}/members`);
-  await expect(head.getByText("Ada Owner")).toBeVisible(); // Another department's people stay visible.
-  await expect(head.getByRole("button", { name: "Invite person" })).toHaveCount(0);
-  await head.goto(`${base}/roles`);
-  await expect(head.getByText("We couldn't find that page")).toBeVisible();
+  for (const path of ["members", "departments", "roles"]) {
+    await head.goto(`${base}/${path}`);
+    await expect(head.getByText("We couldn't find that page")).toBeVisible();
+    await expect(head.getByText("Ada Owner")).toHaveCount(0);
+  }
   await expect(head.getByText("New role")).toHaveCount(0);
 
   await page.goto(`${base}/departments`);

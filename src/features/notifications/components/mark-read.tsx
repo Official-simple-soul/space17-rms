@@ -2,13 +2,13 @@
 
 import { useEffect } from "react";
 import { ActionForm } from "@/components/ui/action-form";
-import { markAllRead, markRequestRead } from "../actions";
+import { markAllRead, markSubjectRead } from "../actions";
 
-/** Opening a request clears its notifications. Runs in the browser so prefetching never does. */
-export function MarkRead({ orgId, requestId }: { orgId: string; requestId: string }) {
+/** Opening an item clears its notifications. Runs in the browser so prefetching never does. */
+export function MarkRead({ orgId, subjectId }: { orgId: string; subjectId: string }) {
   useEffect(() => {
-    markRequestRead(orgId, requestId).catch(() => {});
-  }, [orgId, requestId]);
+    markSubjectRead(orgId, subjectId).catch(() => {});
+  }, [orgId, subjectId]);
   return null;
 }
 

@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-  checkDraft,
-  fromAnswers,
-  lineTotal,
-  parseQuantity,
-  toAnswers,
-} from "@/features/requests/form";
+import { checkDraft } from "@/features/requests/form";
+import { fromAnswers, toAnswers } from "@/features/templates/answers";
+import { lineTotal, parseQuantity } from "@/lib/line-items";
 import { notificationMessage } from "@/features/notifications/message";
 import type { TemplateField } from "@/features/templates/schema";
 import { contentMatches } from "@/lib/files/types";
@@ -20,6 +16,7 @@ const fields: TemplateField[] = [
 const valid = {
   title: "Printer paper",
   purpose: "For the office",
+  categoryId: "c",
   departmentId: "d",
   items: [{ key: "i", description: "Paper", quantity: "2.5", price: "500" }],
   fields,

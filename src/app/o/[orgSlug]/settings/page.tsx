@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { OrganisationForm } from "@/features/organisations/components/forms";
 import { getOrganisation } from "@/features/organisations/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { DueDayForm } from "@/features/reports/components/due-day-form";
+import { requireSection } from "@/lib/auth/access";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage({ params }: PageProps<"/o/[orgSlug]/settings">) {
   const { orgSlug } = await params;
-  const { session, organisation, can } = await getOrganisationContext(orgSlug);
-  if (!can("org.manage")) notFound();
+  const { session, organisation } = await requireSection(orgSlug, "settings");
   const details = await getOrganisation(organisation.id);
   return (
     <>
@@ -26,6 +25,10 @@ export default async function SettingsPage({ params }: PageProps<"/o/[orgSlug]/s
           </Notice>
         )}
         <OrganisationForm organisation={details} />
+      </Card>
+      <Card className="mt-6 max-w-2xl p-6">
+        <h2 className="mb-5 font-semibold">Reports</h2>
+        <DueDayForm orgId={organisation.id} day={details.report_due_day} />
       </Card>
     </>
   );

@@ -40,6 +40,10 @@ export function FormDialog({
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/50" />
         <Dialog.Content
           {...(description ? {} : { "aria-describedby": undefined })}
+          // Closing a toast shouldn't close the panel behind it.
+          onInteractOutside={(event) => {
+            if ((event.target as Element).closest("[data-sonner-toaster]")) event.preventDefault();
+          }}
           className="bg-surface fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col text-left shadow-xl"
         >
           <header className="border-line flex items-start justify-between gap-4 border-b p-5">

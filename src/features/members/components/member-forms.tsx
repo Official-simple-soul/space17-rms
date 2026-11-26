@@ -1,10 +1,8 @@
 "use client";
 
-import { Copy } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 import { ActionForm } from "@/components/ui/action-form";
-import { Button } from "@/components/ui/button";
+import { CopyBox } from "@/components/ui/copy-box";
 import { SelectField, TextArea, TextField } from "@/components/ui/field";
 import { Notice } from "@/components/ui/surface";
 import type { ActionState } from "@/lib/action-state";
@@ -33,25 +31,21 @@ function InviteResult({ state }: { state: ActionState }) {
           <span className="whitespace-pre-line">{errors}</span>
         </Notice>
       )}
+      {state.data?.link && (
+        <CopyBox
+          label={`Invitation link for ${state.data.email}`}
+          text={state.data.link}
+          hint="Send it to them. They open it to set a password and join. It works once, for this email only."
+          testId="join-links"
+        />
+      )}
       {links && (
-        <div className="rounded-control border-line border p-3">
-          <pre className="max-h-40 overflow-auto text-xs" data-testid="join-links">
-            {links}
-          </pre>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="mt-3"
-            onClick={async () => {
-              await navigator.clipboard.writeText(links);
-              toast.success("Copied");
-            }}
-          >
-            <Copy className="size-4" aria-hidden />
-            Copy
-          </Button>
-        </div>
+        <CopyBox
+          label="Invitation links"
+          text={links}
+          hint="Each line is an email, a comma, then that person's link. Send people only their own link."
+          testId="join-links"
+        />
       )}
     </>
   );
@@ -110,7 +104,7 @@ export function InviteForm({
   departments: Department[];
 }) {
   return (
-    <ActionForm action={inviteMember} submit="Create invitation" variant="brand">
+    <ActionForm action={inviteMember} keepMessage submit="Create invitation" variant="brand">
       {(state) => (
         <>
           <InviteResult state={state} />
@@ -126,7 +120,7 @@ export function InviteForm({
 export function BulkInviteForm({ orgId }: { orgId: string }) {
   const [rows, setRows] = useState("");
   return (
-    <ActionForm action={inviteMany} submit="Check and invite" variant="outline">
+    <ActionForm action={inviteMany} keepMessage submit="Check and invite" variant="outline">
       {(state) => (
         <>
           <InviteResult state={state} />

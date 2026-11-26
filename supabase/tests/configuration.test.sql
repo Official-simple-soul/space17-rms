@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(53);
+select plan(54);
 
 insert into auth.users (id, email, email_confirmed_at, aud, role, raw_user_meta_data)
 select ('00000000-0000-0000-0000-00000000000' || n)::uuid, 'u' || n || '@test.local', now(), 'authenticated', 'authenticated',
@@ -132,5 +132,8 @@ select is((select count(*)::int from list_audit(pg_temp.v('org-a'), p_person => 
 
 select pg_temp.login(5);
 select lives_ok($$ select add_starter_configuration(pg_temp.v('org-b')) $$, 'an empty organisation can use the starter set');
+select is((select string_agg(f ->> 'key', ',') from templates t join template_versions v on v.id = t.current_version_id,
+  jsonb_array_elements(v.fields) f where t.org_id = pg_temp.v('org-b') and t.name = 'General request'),
+  'supplier,quotation', 'the starter request does not repeat purpose');
 select * from finish();
 rollback;

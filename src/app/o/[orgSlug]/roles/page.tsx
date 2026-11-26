@@ -1,20 +1,18 @@
 import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { buttonStyles } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/surface";
 import { RolesView } from "@/features/roles/components/roles-view";
 import { getRoleCounts, listRoles } from "@/features/roles/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Roles" };
 
 export default async function RolesPage({ params }: PageProps<"/o/[orgSlug]/roles">) {
   const { orgSlug } = await params;
-  const { organisation, can } = await getOrganisationContext(orgSlug);
-  if (!can("roles.manage")) notFound();
+  const { organisation } = await requireSection(orgSlug, "roles");
   const [roles, counts, view] = await Promise.all([
     listRoles(organisation.id),
     getRoleCounts(organisation.id),

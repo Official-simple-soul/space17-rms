@@ -27,7 +27,7 @@ export async function deliverEmails() {
         lines: [`Hello ${item.name}, there's an update for you in ${item.org_name}.`],
         action: {
           label: "Open",
-          url: env.appUrl + notificationPath(`/o/${item.org_slug}`, item.type, item.request_id),
+          url: env.appUrl + notificationPath(`/o/${item.org_slug}`, item.type, item),
         },
         footer: `Sent because you're a member of ${item.org_name} on space17-rms.`,
       });
@@ -60,4 +60,10 @@ export function deliverSoon() {
       console.error("Email delivery failed", error instanceof Error ? error.message : "unknown");
     }
   });
+}
+
+/** Adds any report reminders that are due. Each is created once, however often this runs. */
+export async function queueReminders() {
+  const { error } = await createAdminClient().rpc("queue_report_reminders");
+  if (error) throw new Error("Could not queue reminders");
 }

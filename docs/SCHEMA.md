@@ -87,12 +87,15 @@ Comments are mandatory for return, reject and amount reductions. Amount changes 
 | Table | Columns | Rules |
 |---|---|---|
 | `report_periods` | org_id, month, due_date, status, closed_by?, closed_at? | unique (org, month); open, closed |
-| `reports` | org_id, number?, kind, period_id, department_id, template_version_id?, status, submitted_by?, submitted_at?, approved_at?, summary?, lock_version | unique (kind, period, department) |
-| `expense_lines` | org_id, entered_by, department_id, category_id, request_id?, report_id?, expense_date, description, seller_name, seller_location?, seller_phone?, quantity, unit_price_minor, total_minor, funding, paid_by_membership_id?, evidence_status, no_receipt_reason?, status, accepted_by?, lock_version | funding: department, personal; paid_by required for personal |
+| `reports` | org_id, number?, kind, period_id, department_id, template_version_id?, form_data jsonb, status, submitted_by?, submitted_at?, lock_version | unique (kind, period, department); number assigned on submission; uses the oldest active expense report template |
+| `expense_lines` | org_id, entered_by, department_id?, category_id?, request_id?, report_id?, expense_date?, description, seller_name, seller_location?, seller_phone?, total_minor, funding, paid_by_membership_id?, no_receipt, no_receipt_reason?, status, accepted_by?, lock_version | funding: department, personal; paid_by is the enterer for personal; report_id set only while accepted or locked |
+| `expense_items` | org_id, expense_line_id, position, description, quantity, unit_price_minor, line_total_minor | total recalculated on the server |
+| `expense_events`, `report_events` | actor_id, type, body? | append-only history |
+| `report_reminders` | org_id, department_id, month, kind | one per department, month and kind: soon, today, late |
 | `line_queries` | org_id, expense_line_id, raised_by, question, response?, responded_by?, status | open, answered, resolved |
 | `report_adjustments` | org_id, report_id, expense_line_id?, amount_delta_minor, reason, created_by, approved_by? | creator cannot approve; original line never changes |
 
-`evidence_status` is derived by the database: `vendor_receipt`, `internal_receipt`, `missing`. `seller_phone` is optional and only ever entered by a person; it is never generated.
+Evidence is calculated from the files, never stored: `vendor_receipt`, `missing` (and `internal_receipt` from M4 part 2). `seller_phone` is optional and only ever entered by a person; it is never generated.
 
 ### Payments and evidence
 
@@ -103,7 +106,7 @@ Comments are mandatory for return, reject and amount reductions. Amount changes 
 | `join_codes`, `join_requests` | org_id, code; org_id, email, full_name, status, token_hash | one code per organisation; requests need a confirmed email, expire after 14 days and create no account before approval |
 | `payments` | org_id, number, request_id? or expense_line_id?, payee_membership_id?, payee_name, amount_minor, paid_on, method, reference?, status, recorded_by, void_reason? | exactly one target; recorded, voided |
 | `payment_confirmations` | org_id, payment_id, confirmed_by, confirmed_at, note? | one per payment |
-| `attachments` | org_id, subject columns?, kind, storage_path, mime, size, sha256, uploaded_by | exactly one subject: request, line, payment or report; vendor_receipt, purchase_photo, transfer_proof, acknowledgement, other |
+| `attachments` | org_id, subject columns?, kind, storage_path, mime, size, sha256, uploaded_by | exactly one of request, expense line or report; payment proof also names its payment; vendor_receipt, purchase_photo, transfer_proof, acknowledgement, other |
 | `internal_receipts` | org_id, number, expense_line_id, snapshot jsonb, pdf_path?, verify_token_hash, status, issued_by, issued_at, voided_by?, void_reason?, replaces_id? | one active per line; snapshot immutable; issued, voided |
 | `ai_extractions` | org_id, attachment_id?, expense_line_id?, purpose, output jsonb, status, reviewed_by? | never writes directly to business records |
 
@@ -146,6 +149,7 @@ Non-monetary requests (`total_minor = 0`) go from approved to closed. Voiding a 
 | draft, returned | submit | submitted | Enterer |
 | submitted | accept | accepted, added to the report | HOD or deputy |
 | submitted | return / reject | returned / rejected | HOD or deputy |
+| submitted, returned | withdraw | cancelled | Enterer |
 | accepted | remove before report submission | returned | HOD or deputy |
 | accepted | report approved | locked | Automatic |
 
@@ -161,7 +165,9 @@ HODs may add their own lines directly as accepted. Finance still reviews them.
 
 "Overdue" is calculated, not stored. Submission warns about missing evidence. Approval is blocked while queries are open; approving with missing evidence requires a written reason. A period closes only when its reports are approved or explicitly waived with an audited reason.
 
-Late expenses go into the next open period and keep their real expense date.
+An accepted expense joins its own month's report while that is open, otherwise the next open one, and keeps its real date. A report older than last month is used only if it was already started. Reports and periods are created when first needed. Deadlines fall on `organisations.report_due_day` of the following month (default 5). Every change to what a department's reports contain takes one lock per department first.
+
+Flags (no receipt, possible duplicate, reused file, request already paid, another month) are calculated and inform reviewers; they block only bulk acceptance. Receipts may be added, never removed, between acceptance and submission.
 
 ### Internal receipt
 

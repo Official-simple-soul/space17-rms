@@ -60,29 +60,25 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await signIn(staff, staffEmail);
   await expect(staff).toHaveURL(new RegExp(`${base}$`));
   await staff.getByRole("link", { name: "New request" }).click();
-  await staff.getByLabel("What do you need?").selectOption({ label: "Office supplies" });
-  await staff.getByRole("button", { name: "Continue" }).click();
-  await expect(staff).toHaveURL(/\/edit$/);
+  await staff.getByLabel("Category").selectOption({ label: "Office supplies" });
+  await expect(staff).toHaveURL(/new\?draft=/);
   await staff.getByLabel("Title").fill("Printer paper");
   await expect(staff.getByText("Draft saved")).toBeVisible();
   await expect(staff.getByText("Not saved yet")).toHaveCount(0);
   await staff.getByRole("button", { name: "Submit request" }).click();
   await expect(staff.getByText("Say what this is for.")).toBeVisible();
-  await expect(staff.getByText("This is required.")).toBeVisible();
   await staff.getByLabel("Purpose").fill("Monthly office supply");
-  await staff.getByLabel("Why is this needed?").fill("We have run out.");
-  await expect(staff.getByText("This is required.")).toHaveCount(0);
   await staff.getByRole("button", { name: "Add item" }).click();
   await staff.getByLabel("Item 1", { exact: true }).fill("A4 paper");
   await staff.getByLabel("Quantity").fill("4");
   await staff.getByLabel("Unit price, NGN").fill("3,500");
   await expect(staff.getByText("₦14,000.00").first()).toBeVisible();
 
-  const upload = staff.locator('input[type="file"]');
+  const upload = staff.locator('input[type="file"]:not([capture])');
   await upload
     .last()
     .setInputFiles({ name: "bad.pdf", mimeType: "application/pdf", buffer: Buffer.from("<html>") });
-  await expect(staff.getByText("That file couldn't be read.")).toBeVisible();
+  await expect(staff.getByText("That file couldn't be read.").first()).toBeVisible();
   await staff.getByRole("button", { name: "Dismiss" }).click();
   await upload.last().setInputFiles({
     name: "list.pdf",
@@ -96,6 +92,7 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
     buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
   });
   await expect(staff.getByRole("button", { name: "Remove quote.png" })).toBeVisible();
+  await expect(staff.getByText("Take photo").first()).toBeHidden();
   await staff.screenshot({ path: "test-results/request-edit.png", fullPage: true });
 
   // A reload keeps the draft.
@@ -104,6 +101,31 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await expect(staff.getByLabel("Title")).toHaveValue("Printer paper");
   await expect(staff.getByLabel("Unit price, NGN")).toHaveValue("3500.00");
   await expect(staff.getByRole("button", { name: "Remove quote.png" })).toBeVisible();
+
+  // On a phone the camera can be opened directly.
+  const phone = await (
+    await browser.newContext({
+      storageState: await staff.context().storageState(),
+      hasTouch: true,
+      isMobile: true,
+      viewport: { width: 390, height: 844 },
+    })
+  ).newPage();
+  await phone.goto(staff.url());
+  await expect(phone.getByText(/^Take photo/)).toHaveCount(2);
+  await expect(phone.getByText(/^Take photo/).first()).toBeVisible();
+  await expect(phone.getByText(/quote or proforma invoice/)).toBeVisible();
+  await phone
+    .locator('input[capture="environment"]')
+    .last()
+    .setInputFiles({
+      name: "snap.png",
+      mimeType: "image/png",
+      buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
+    });
+  await expect(phone.getByRole("button", { name: "Remove snap.png" })).toBeVisible();
+  await phone.screenshot({ path: "test-results/m-request-photo.png", fullPage: true });
+  await phone.context().close();
 
   // A second tab that saved first stops this one from overwriting.
   const second = await staff.context().newPage();
@@ -118,7 +140,9 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
     .toBe("Printer paper and ink");
   await second.close();
   await staff.getByLabel("Title").fill("Old title");
-  await expect(staff.getByText("This request has changed since you opened it.")).toBeVisible();
+  await expect(
+    staff.getByText("This request has changed since you opened it.").first(),
+  ).toBeVisible();
   // The page is still dirty, so the browser asks before leaving it.
   staff.once("dialog", (d) => d.accept());
   await staff.getByRole("button", { name: "Reload" }).click();
@@ -128,10 +152,11 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   const other = await (await browser.newContext()).newPage();
   await signIn(other, otherEmail);
   await expect(other).toHaveURL(new RegExp(`${base}$`));
-  const detail = staff.url().replace(/\/edit$/, "");
+  const detail = staff.url().replace("new?draft=", "");
   await other.goto(detail);
   await expect(other.getByText("We couldn't find that page")).toBeVisible();
   await staff.getByRole("button", { name: "Submit request" }).click();
+  await expect(staff.getByText("Request submitted.")).toBeVisible();
   await expect(staff).toHaveURL(detail);
   await expect(staff.getByText(/REQ-\d{4}-0001/).first()).toBeVisible();
   await expect(staff.getByText("Waiting for Amaka")).toBeVisible();
@@ -218,9 +243,10 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
 
   // Delete a draft; admins see everything submitted but no drafts.
   await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("What do you need?").selectOption({ label: "Equipment" });
-  await staff.getByRole("button", { name: "Continue" }).click();
-  await expect(staff).toHaveURL(/\/edit$/);
+  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
+  await expect(staff).toHaveURL(/new\?draft=/);
+  await expect(staff.getByRole("button", { name: "Delete draft" })).toBeVisible();
+  await expect(staff.getByText("Not saved yet")).toHaveCount(0);
   await staff.goto(`${base}/requests`);
   await expect(staff.getByRole("row", { name: /Untitled request/ })).toBeVisible();
   await page.goto(`${base}/requests?tab=all`);
@@ -230,16 +256,25 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await staff.getByRole("link", { name: "Untitled request" }).click();
   await staff.getByRole("button", { name: "Delete draft" }).click();
   await staff.getByRole("alertdialog").getByRole("button", { name: "Delete draft" }).click();
+  await expect(staff.getByText("Draft deleted.")).toBeVisible();
   await expect(staff).toHaveURL(/\/requests$/);
   await expect(staff.getByText("Untitled request")).toHaveCount(0);
 
   // Withdraw.
   await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("What do you need?").selectOption({ label: "Equipment" });
-  await staff.getByRole("button", { name: "Continue" }).click();
   await staff.getByLabel("Title").fill("Use the van");
   await staff.getByLabel("Purpose").fill("Moving boxes");
-  await staff.getByLabel("Why is this needed?").fill("Office move");
+  await staff.getByRole("button", { name: "Submit request" }).click();
+  await expect(staff.getByText("Choose a category.", { exact: true })).toBeVisible();
+  await expect(staff.getByText("Choose a category first, then add files.")).toBeVisible();
+  await staff.evaluate(() => document.body.setAttribute("data-same-page", ""));
+  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
+  await staff.getByLabel("Purpose").fill("Moving boxes today");
+  // What was typed first is kept when the category's questions appear.
+  await expect(staff.getByLabel("Preferred supplier")).toBeVisible();
+  await expect(staff.getByLabel("Title")).toHaveValue("Use the van");
+  await expect(staff.getByLabel("Purpose")).toHaveValue("Moving boxes today");
+  await expect(staff.locator("body[data-same-page]")).toBeAttached();
   await staff.getByRole("button", { name: "Submit request" }).click();
   await staff.getByRole("button", { name: "Withdraw" }).click();
   await staff.getByLabel("Reason", { exact: true }).fill("No longer needed");
@@ -257,14 +292,13 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
     ).toBe(true);
   }
   await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("What do you need?").selectOption({ label: "Equipment" });
-  await staff.getByRole("button", { name: "Continue" }).click();
+  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
   await expect(staff.getByLabel("Title")).toBeVisible();
   await staff.screenshot({ path: "test-results/m-request-edit.png", fullPage: true });
   expect(await staff.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await staff.getByLabel("Title").fill("Use the hall");
   await staff.getByLabel("Purpose").fill("Training day");
-  await staff.getByLabel("Why is this needed?").fill("Training");
+  await expect(staff.getByLabel("Preferred supplier")).toBeVisible();
   await staff.getByRole("button", { name: "Submit request" }).click();
   await expect(staff.getByText("Waiting for Amaka")).toBeVisible();
   await page.goto(staff.url());

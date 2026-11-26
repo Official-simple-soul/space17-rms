@@ -1,35 +1,22 @@
 "use client";
 
-import { Copy } from "lucide-react";
-import { toast } from "sonner";
 import { ActionForm } from "@/components/ui/action-form";
-import { Button } from "@/components/ui/button";
+import { CopyBox } from "@/components/ui/copy-box";
 import { TextField } from "@/components/ui/field";
 import { changeStatus, declineRequest, inviteOrganisation, revokeInvite } from "../actions";
 
 export function InviteForm() {
   return (
-    <ActionForm action={inviteOrganisation} submit="Create invitation" variant="brand">
+    <ActionForm action={inviteOrganisation} keepMessage submit="Create invitation" variant="brand">
       {(state) => (
         <>
           {state.data?.link && (
-            <div className="rounded-control border-line flex items-center gap-2 border p-2 pl-3">
-              <code className="min-w-0 flex-1 truncate text-xs" data-testid="invite-link">
-                {state.data.link}
-              </code>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  await navigator.clipboard.writeText(state.data!.link);
-                  toast.success("Link copied");
-                }}
-              >
-                <Copy className="size-4" aria-hidden />
-                Copy
-              </Button>
-            </div>
+            <CopyBox
+              label="Invitation link"
+              text={state.data.link}
+              hint="Send it to the organisation's admin. It works once, for this email only."
+              testId="invite-link"
+            />
           )}
           <TextField
             label="Organisation admin's email"

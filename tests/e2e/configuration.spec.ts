@@ -85,7 +85,7 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByRole("button", { name: "View version 1" }).click();
   await expect(page.getByRole("dialog").getByLabel("Transport")).toBeVisible();
   await expect(page.getByRole("dialog").getByLabel("Departure")).toHaveCount(0);
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
 
   // A second tab that loaded the old version cannot overwrite a newer one.
   const stale = await page.context().newPage();
@@ -184,7 +184,7 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByRole("button", { name: /^View Numbering updated/ }).click();
   await expect(page.getByRole("dialog")).toContainText("REQ");
   await expect(page.getByRole("dialog")).toContainText("RQ");
-  await page.getByRole("button", { name: "Close" }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByLabel("Filter by to date").fill("2020-01-01");
   await expect(page.getByText("No matches")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();

@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { optionalId } from "@/lib/forms";
 import { parseSaved, readJson } from "@/lib/rpc-json";
 import { createClient } from "@/lib/supabase/server";
@@ -36,7 +36,8 @@ export async function saveWorkflow(_: ActionState, form: FormData): Promise<Acti
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
   const saved = parseSaved(data);
-  if (!v.id) redirect(`/o/${v.slug}/configuration/workflows/${saved.id}`);
+  if (!v.id)
+    return redirectWith(`/o/${v.slug}/configuration/workflows/${saved.id}`, "Workflow created.");
   return {
     ok: true,
     message:
@@ -53,5 +54,5 @@ export async function archiveWorkflow(_: ActionState, form: FormData): Promise<A
   ).rpc("archive_workflow", { p_org: input.data.orgId, p_id: input.data.id });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  redirect(`/o/${input.data.slug}/configuration/workflows`);
+  return redirectWith(`/o/${input.data.slug}/configuration/workflows`, "Workflow archived.");
 }

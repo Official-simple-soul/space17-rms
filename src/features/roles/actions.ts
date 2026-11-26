@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { optionalId } from "@/lib/forms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +30,7 @@ export async function saveRole(_: ActionState, form: FormData): Promise<ActionSt
   });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  if (!input.data.id) redirect(`/o/${input.data.slug}/roles/${data}`);
+  if (!input.data.id) return redirectWith(`/o/${input.data.slug}/roles/${data}`, "Role created.");
   return { ok: true, message: "Role saved." };
 }
 
@@ -45,5 +45,5 @@ export async function archiveRole(_: ActionState, form: FormData): Promise<Actio
   });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  redirect(`/o/${input.data.slug}/roles`);
+  return redirectWith(`/o/${input.data.slug}/roles`, "Role archived.");
 }

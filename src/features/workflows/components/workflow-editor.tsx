@@ -13,6 +13,7 @@ import { useUnsavedWarning } from "@/lib/use-unsaved-warning";
 import { archiveWorkflow, saveWorkflow } from "../actions";
 import { stepsForAmount } from "../rules";
 import { WORKFLOW_SUBJECTS, type WorkflowStep, type WorkflowSubject } from "../schema";
+import { uid } from "@/lib/uid";
 
 type Option = { id: string; name: string };
 export type ApproverOptions = Record<WorkflowSubject, { roles: Option[]; people: Option[] }>;
@@ -274,7 +275,7 @@ export function WorkflowEditor({
                 type="button"
                 variant="outline"
                 disabled={steps.length >= 10}
-                onClick={() => setSteps((list) => [...list, blank(subject, crypto.randomUUID())])}
+                onClick={() => setSteps((list) => [...list, blank(subject, uid())])}
               >
                 <Plus className="size-4" aria-hidden />
                 Add step

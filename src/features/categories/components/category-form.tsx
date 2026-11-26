@@ -8,6 +8,7 @@ import { SelectField, TextField } from "@/components/ui/field";
 import { Notice } from "@/components/ui/surface";
 import { archiveCategory, saveCategory } from "../actions";
 import { APPLIES_TO, type AppliesTo, type CategoryApprover } from "../schema";
+import { uid } from "@/lib/uid";
 
 type Option = { id: string; name: string };
 type Category = {
@@ -241,10 +242,7 @@ export function CategoryForm({
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setApprovers((list) => [
-                      ...list,
-                      { key: crypto.randomUUID(), who: "", department: "" },
-                    ])
+                    setApprovers((list) => [...list, { key: uid(), who: "", department: "" }])
                   }
                 >
                   <Plus className="size-4" aria-hidden />

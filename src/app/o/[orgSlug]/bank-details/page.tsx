@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { BankForm, RemoveBankAccount } from "@/features/bank/components/bank-form";
 import { getMyBankAccount } from "@/features/bank/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { formatDate } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Bank details" };
 
 export default async function BankDetailsPage({ params }: PageProps<"/o/[orgSlug]/bank-details">) {
-  const { organisation } = await getOrganisationContext((await params).orgSlug);
+  const { organisation } = await requireSection((await params).orgSlug, "bankDetails");
   const account = await getMyBankAccount(organisation.id);
   return (
     <>

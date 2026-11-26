@@ -51,7 +51,9 @@ export default async function EditRequestPage({
         </div>
       )}
       <RequestEditor
+        orgId={organisation.id}
         base={base}
+        currency={request.currency}
         request={request}
         categories={categories}
         departments={departments}

@@ -41,6 +41,9 @@ function resend(apiKey: string): Provider {
   };
 }
 
+/** True in local development, where emails never reach real people. */
+export const usesTestInbox = () => !process.env.RESEND_API_KEY || !process.env.EMAIL_FROM;
+
 /** Null when email isn't set up; callers then keep working without it. */
 export function getEmailProvider(): Provider | null {
   if (process.env.RESEND_API_KEY && process.env.EMAIL_FROM)

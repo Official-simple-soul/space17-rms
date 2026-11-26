@@ -66,7 +66,7 @@ Sizes are relative: S, M, L.
 
 | Task | Size | Accepted when |
 |---|---|---|
-| Departments and members | M | People page lists the whole organisation with a department filter; one HOD per department; deputy grants expire |
+| Departments and members | M | People page (managers and auditors only) lists the whole organisation with a department filter; one HOD per department; deputy grants expire |
 | Roles and permission grid | L | Scopes enforced in the database; last admin protected |
 | Staff invite, CSV and join code | L | No auth user exists before join approval |
 | Offboarding | M | Access ends immediately; pending work is reassigned |

@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { z } from "zod";
 import { parseSort } from "@/lib/data-view";
 import { isId, loadPage, text, type Query } from "@/lib/server-page";
 import { createClient } from "@/lib/supabase/server";
@@ -74,15 +73,3 @@ export const getMyWork = cache(async (orgId: string) => {
   if (error) throw new Error("Could not load your work");
   return data;
 });
-
-const file = z.object({ storage_path: z.string(), file_name: z.string(), mime: z.string() });
-/** Null unless the caller may see the request the file belongs to. */
-export async function getAttachment(id: string) {
-  if (!isId(id)) return null;
-  const { data, error } = await (
-    await createClient()
-  )
-    .rpc("get_attachment", { p_id: id })
-    .maybeSingle();
-  return error || !data ? null : file.parse(data);
-}

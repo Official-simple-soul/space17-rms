@@ -139,7 +139,7 @@ export function OrganisationForm({ organisation }: { organisation: Organisation 
 
 export function AccessRequestForm() {
   return (
-    <ActionForm action={requestAccess} submit="Request access" fullWidth>
+    <ActionForm action={requestAccess} keepMessage submit="Request access" fullWidth>
       {(state) =>
         state.ok ? null : (
           <>

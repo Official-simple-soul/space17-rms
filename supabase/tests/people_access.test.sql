@@ -54,7 +54,7 @@ select is((select count(*)::int from invitations), 0, 'staff cannot read invitat
 select throws_ok($$ select invite_member(pg_temp.v('org-a'), 'x@test.local', pg_temp.v('staff'), null) $$, '42501', 'not_allowed', 'staff cannot invite');
 select pg_temp.login(2);
 select lives_ok($$ select accept_invitation((select v from t where k = 'i2')) $$, 'HOD joins');
-select is((select count(*)::int from memberships where org_id = pg_temp.v('org-a')), 3, 'everyone in the organisation is visible across departments');
+select is((select count(*)::int from memberships where org_id = pg_temp.v('org-a')), 1, 'a head sees only their own membership');
 select ok(app.has_perm(pg_temp.v('org-a'), 'reports.submit', pg_temp.v('d1')), 'HOD can submit for own department');
 select ok(not app.has_perm(pg_temp.v('org-a'), 'reports.submit', pg_temp.v('d2')), 'HOD cannot submit for another department');
 

@@ -5,14 +5,14 @@ import { PageHeader } from "@/components/ui/surface";
 import { DepartmentForm } from "@/features/departments/components/department-forms";
 import { DepartmentsView } from "@/features/departments/components/departments-view";
 import { getDepartmentOverview, listDepartments } from "@/features/departments/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Departments" };
 
 export default async function DepartmentsPage({ params }: PageProps<"/o/[orgSlug]/departments">) {
   const { orgSlug } = await params;
-  const { organisation, can } = await getOrganisationContext(orgSlug);
+  const { organisation, can } = await requireSection(orgSlug, "departments");
   const manage = can("org.manage");
   const [departments, overview, view] = await Promise.all([
     listDepartments(organisation.id),

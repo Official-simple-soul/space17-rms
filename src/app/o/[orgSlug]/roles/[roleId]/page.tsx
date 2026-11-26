@@ -4,14 +4,13 @@ import { notFound } from "next/navigation";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { ArchiveRole, RoleForm } from "@/features/roles/components/role-form";
 import { listPermissions, listRoles } from "@/features/roles/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 
 export const metadata: Metadata = { title: "Role" };
 
 export default async function RolePage({ params }: PageProps<"/o/[orgSlug]/roles/[roleId]">) {
   const { orgSlug, roleId } = await params;
-  const { organisation, can } = await getOrganisationContext(orgSlug);
-  if (!can("roles.manage")) notFound();
+  const { organisation } = await requireSection(orgSlug, "roles");
   const [roles, permissions] = await Promise.all([listRoles(organisation.id), listPermissions()]);
   const role = roles.find((r) => r.id === roleId);
   if (!role && roleId !== "new") notFound();

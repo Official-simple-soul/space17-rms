@@ -11,7 +11,7 @@ import { JoinCodeCard, JoinRequestsView } from "@/features/members/components/jo
 import { getJoinSetup } from "@/features/members/join-repository";
 import { countMembers, listInvitations, listMembers } from "@/features/members/repository";
 import { listRoles } from "@/features/roles/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "People" };
@@ -23,7 +23,7 @@ export default async function MembersPage({
   const { orgSlug } = await params;
   const query = await searchParams;
   const { tab } = query;
-  const { organisation, can } = await getOrganisationContext(orgSlug);
+  const { organisation, can } = await requireSection(orgSlug, "members");
   const manage = can("members.manage");
   const [people, count, departments, roles, invitations, joining, view] = await Promise.all([
     listMembers(organisation.id, query),

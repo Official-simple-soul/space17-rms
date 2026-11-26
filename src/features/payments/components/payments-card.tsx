@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { SelectField, TextArea, TextField } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { Badge, Card, Notice } from "@/components/ui/surface";
-import { FileUploader } from "@/features/requests/components/file-uploader";
-import { Files } from "@/features/requests/components/request-details";
+import { FileUploader } from "@/features/files/components/file-uploader";
+import { Files } from "@/features/files/components/files";
 import type { RequestDetail } from "@/features/requests/schema";
 import { formatDate, formatMoney, parseMoney } from "@/lib/format";
 import {
@@ -34,7 +34,6 @@ function RecordForm({ request: r, today }: { request: RequestDetail; today: stri
       submit="Record payment"
       variant="brand"
       closeOnSuccess
-      toastErrors
       confirm={{
         title: `Record ${formatMoney(minor, r.currency)}?`,
         description: "This records a payment already made. It doesn't move money.",
@@ -192,14 +191,7 @@ function PaymentItem({
             <FileUploader
               label="Add proof"
               files={[]}
-              start={(file) =>
-                startProof({
-                  paymentId: p.id,
-                  name: file.name,
-                  type: file.type,
-                  size: file.size,
-                })
-              }
+              start={(file) => startProof({ ...file, paymentId: p.id })}
               onChange={() => router.refresh()}
             />
           )}
@@ -214,7 +206,6 @@ function PaymentItem({
             size="sm"
             className="space-y-2"
             closeOnSuccess
-            toastErrors
             confirm={{
               title: "Confirm this payment?",
               description: `You're confirming ${formatMoney(p.amount_minor, r.currency)} was received.`,
@@ -232,13 +223,7 @@ function PaymentItem({
             variant="outline"
             size="sm"
           >
-            <ActionForm
-              action={voidPayment}
-              submit="Void payment"
-              variant="brand"
-              closeOnSuccess
-              toastErrors
-            >
+            <ActionForm action={voidPayment} submit="Void payment" variant="brand" closeOnSuccess>
               {(state) => (
                 <>
                   <input type="hidden" name="id" value={p.id} />

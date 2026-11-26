@@ -16,7 +16,7 @@ pnpm dev
 
 Open http://127.0.0.1:3100. Local email is at http://127.0.0.1:54324.
 
-In production, set `RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET`, and call `GET /api/jobs/email` with `Authorization: Bearer <CRON_SECRET>` every few minutes. Emails are sent straight away; the job retries failures.
+In production, set `RESEND_API_KEY`, `EMAIL_FROM` and `CRON_SECRET`, and call `GET /api/jobs/email` with `Authorization: Bearer <CRON_SECRET>` every few minutes. Emails are sent straight away; the job retries failures and sends report reminders.
 
 ## Checks
 

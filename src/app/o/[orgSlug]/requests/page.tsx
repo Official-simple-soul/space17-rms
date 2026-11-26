@@ -9,7 +9,7 @@ import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
 import { RequestsView } from "@/features/requests/components/requests-view";
 import { listRequests } from "@/features/requests/repository";
-import { getOrganisationContext } from "@/lib/auth/session";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Requests" };
@@ -20,7 +20,7 @@ export default async function RequestsPage({
 }: PageProps<"/o/[orgSlug]/requests">) {
   const { orgSlug } = await params;
   const query = await searchParams;
-  const { organisation, permissions, can } = await getOrganisationContext(orgSlug);
+  const { organisation, permissions, can } = await requireSection(orgSlug, "requests");
   const seesMore = permissions.some(
     (p) => p.permission_key === "requests.view" && p.scope !== "own",
   );

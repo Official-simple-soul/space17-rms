@@ -12,6 +12,7 @@ import { useUnsavedWarning } from "@/lib/use-unsaved-warning";
 import { archiveTemplate, saveTemplate } from "../actions";
 import { FIELD_TYPES, TEMPLATE_KINDS, type FieldType, type TemplateField } from "../schema";
 import { TemplateFields } from "./template-fields";
+import { uid } from "@/lib/uid";
 
 type Template = {
   id: string;
@@ -21,7 +22,7 @@ type Template = {
   fields: TemplateField[];
 };
 
-const newKey = () => `f_${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+const newKey = () => `f_${uid().slice(0, 12)}`;
 
 export function TemplateEditor({
   orgId,

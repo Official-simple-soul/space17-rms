@@ -5,6 +5,7 @@ import { z } from "zod";
 import { env } from "@/config/env";
 import { emailOrganisationInvite } from "@/features/members/email";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { invitationMessage } from "@/lib/email/invitation-message";
 import { createClient } from "@/lib/supabase/server";
 
 const id = z.object({ id: z.uuid() });
@@ -23,9 +24,7 @@ export async function inviteOrganisation(_: ActionState, form: FormData): Promis
   revalidatePath("/platform");
   return {
     ok: true,
-    message: sent
-      ? "Invitation emailed. You can also copy the link now; it won't be shown again."
-      : "Invitation created. Copy the link now; it won't be shown again.",
+    message: invitationMessage(sent),
     data: { link },
   };
 }
@@ -36,7 +35,7 @@ export async function revokeInvite(_: ActionState, form: FormData): Promise<Acti
   const { error } = await (await createClient()).rpc("revoke_org_invite", { p_id: input.data.id });
   if (error) return failure(error);
   revalidatePath("/platform");
-  return { ok: true };
+  return { ok: true, message: "Invitation revoked." };
 }
 
 export async function declineRequest(_: ActionState, form: FormData): Promise<ActionState> {
@@ -47,7 +46,7 @@ export async function declineRequest(_: ActionState, form: FormData): Promise<Ac
   ).rpc("decline_access_request", { p_id: input.data.id });
   if (error) return failure(error);
   revalidatePath("/platform");
-  return { ok: true };
+  return { ok: true, message: "Request declined." };
 }
 
 export async function changeStatus(_: ActionState, form: FormData): Promise<ActionState> {

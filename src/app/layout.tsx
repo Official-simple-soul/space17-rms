@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -16,7 +16,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="en" className={inter.variable}>
       <body className="min-h-dvh antialiased">
         {children}
-        <Toaster position="top-right" theme="light" />
+        <Toaster />
       </body>
     </html>
   );

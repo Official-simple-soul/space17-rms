@@ -9,7 +9,7 @@ import { listDepartments } from "@/features/departments/repository";
 import { StarterSet } from "@/features/setup/components/starter-set";
 import { getSetupCounts, listSetupWarnings } from "@/features/setup/repository";
 import { listWorkflows } from "@/features/workflows/repository";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Categories" };
@@ -18,7 +18,7 @@ export default async function CategoriesPage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/categories">) {
   const { orgSlug } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const [categories, departments, workflows, warnings, counts, view] = await Promise.all([
     listCategories(organisation.id),
     listDepartments(organisation.id),

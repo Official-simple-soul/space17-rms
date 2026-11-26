@@ -2,7 +2,9 @@ import {
   Banknote,
   Building2,
   CircleCheck,
+  ClipboardList,
   FileText,
+  Receipt,
   ShieldCheck,
   Undo2,
   Users,
@@ -15,6 +17,7 @@ import { getMyWork } from "@/features/requests/repository";
 import { SetupChecklist, SetupWarnings } from "@/features/setup/components/setup-checklist";
 import { getSetupCounts, listSetupWarnings } from "@/features/setup/repository";
 import { describeWarning } from "@/features/setup/warnings";
+import { opens } from "@/lib/auth/access";
 import { getOrganisationContext } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -25,7 +28,7 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
   const manage = can("org.manage") || can("config.manage");
   const [work, counts, warnings] = await Promise.all([
     getMyWork(organisation.id),
-    getSetupCounts(organisation.id),
+    manage ? getSetupCounts(organisation.id) : null,
     manage ? listSetupWarnings(organisation.id) : [],
   ]);
   const base = `/o/${orgSlug}`;
@@ -39,10 +42,40 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
             href: `${base}/requests`,
           },
           {
-            label: "Returned to you",
+            label: "Requests returned to you",
             value: work.returned,
             icon: Undo2,
             href: `${base}/requests?status=returned`,
+          },
+        ]
+      : []),
+    ...(work.expenses_returned > 0
+      ? [
+          {
+            label: "Expenses returned to you",
+            value: work.expenses_returned,
+            icon: Undo2,
+            href: `${base}/expenses?status=returned`,
+          },
+        ]
+      : []),
+    ...(can("expenses.accept")
+      ? [
+          {
+            label: "Expenses to review",
+            value: work.expenses_waiting,
+            icon: Receipt,
+            href: `${base}/expenses?tab=inbox`,
+          },
+        ]
+      : []),
+    ...(can("reports.submit")
+      ? [
+          {
+            label: "Reports to submit",
+            value: work.reports_due,
+            icon: ClipboardList,
+            href: `${base}/reports`,
           },
         ]
       : []),
@@ -70,37 +103,47 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
         ]
       : []),
   ];
-  const stats = [
-    { label: "People", value: counts.members, icon: Users },
-    { label: "Departments", value: counts.departments, icon: Building2 },
-    { label: "Roles", value: counts.roles, icon: ShieldCheck },
-  ];
+  const stats = counts
+    ? [
+        { label: "People", value: counts.members, icon: Users },
+        { label: "Departments", value: counts.departments, icon: Building2 },
+        { label: "Roles", value: counts.roles, icon: ShieldCheck },
+      ]
+    : [];
+  // Setup may be split between people, so each sees only the parts they can open.
+  const canOpen = ({ href }: { href: string }) =>
+    (["members", "departments", "configuration"] as const).every(
+      (section) => !href.startsWith(`${base}/${section}`) || opens(can, section),
+    );
   const blocked = (code: string) => warnings.some((w) => w.code === code);
-  const steps = [
-    { label: "Turn on two-step verification", done: session.aal === "aal2", href: "/account" },
-    { label: "Add departments", done: counts.departments > 0, href: `${base}/departments` },
-    {
-      label: "Create categories",
-      done: counts.categories > 0,
-      href: `${base}/configuration/categories`,
-    },
-    { label: "Invite your team", done: counts.members > 1, href: `${base}/members` },
-    {
-      label: "Give every department a head",
-      done: counts.departments > 0 && !blocked("department_head"),
-      href: `${base}/members`,
-    },
-    {
-      label: "Assign enough approvers",
-      done: counts.categories > 0 && !blocked("category_approvers") && !blocked("workflow_step"),
-      href: `${base}/configuration/categories`,
-    },
-    {
-      label: "Assign two people to record payments",
-      done: !blocked("payers"),
-      href: `${base}/members`,
-    },
-  ];
+  const steps = counts
+    ? [
+        { label: "Turn on two-step verification", done: session.aal === "aal2", href: "/account" },
+        { label: "Add departments", done: counts.departments > 0, href: `${base}/departments` },
+        {
+          label: "Create categories",
+          done: counts.categories > 0,
+          href: `${base}/configuration/categories`,
+        },
+        { label: "Invite your team", done: counts.members > 1, href: `${base}/members` },
+        {
+          label: "Give every department a head",
+          done: counts.departments > 0 && !blocked("department_head"),
+          href: `${base}/members`,
+        },
+        {
+          label: "Assign enough approvers",
+          done:
+            counts.categories > 0 && !blocked("category_approvers") && !blocked("workflow_step"),
+          href: `${base}/configuration/categories`,
+        },
+        {
+          label: "Assign two people to record payments",
+          done: !blocked("payers"),
+          href: `${base}/members`,
+        },
+      ].filter(canOpen)
+    : [];
   return (
     <>
       <PageHeader
@@ -126,20 +169,19 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
             </Card>
           </Link>
         ))}
-        {manage &&
-          stats.map(({ label, value, icon: Icon }) => (
-            <Card key={label} className="p-5">
-              <div className="text-muted flex items-center justify-between text-sm">
-                {label}
-                <Icon className="size-4" aria-hidden />
-              </div>
-              <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
-            </Card>
-          ))}
+        {stats.map(({ label, value, icon: Icon }) => (
+          <Card key={label} className="p-5">
+            <div className="text-muted flex items-center justify-between text-sm">
+              {label}
+              <Icon className="size-4" aria-hidden />
+            </div>
+            <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+          </Card>
+        ))}
       </div>
       {manage && (
         <>
-          <SetupWarnings warnings={warnings.map((w) => describeWarning(w, base))} />
+          <SetupWarnings warnings={warnings.map((w) => describeWarning(w, base)).filter(canOpen)} />
           {steps.some((s) => !s.done) && <SetupChecklist steps={steps} />}
         </>
       )}

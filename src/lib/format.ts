@@ -18,6 +18,19 @@ export function formatDateTime(value: string | Date, timeZone = "Africa/Lagos") 
   }).format(new Date(value));
 }
 
+export function formatMonth(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${value.slice(0, 7)}-01T00:00:00Z`));
+}
+
+/** Today's date, YYYY-MM-DD, where the organisation is. */
+export function todayIn(timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone }).format(new Date());
+}
+
 /** Amounts are stored in minor units, for example kobo. */
 export function formatMoney(minor: number, currency = "NGN") {
   return new Intl.NumberFormat("en-NG", { style: "currency", currency }).format(minor / 100);

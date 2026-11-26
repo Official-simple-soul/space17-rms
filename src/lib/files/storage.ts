@@ -1,15 +1,20 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { env } from "@/config/env";
+import { isLocalSupabase, LOCAL_STORAGE_PATH } from "./local";
 import { contentMatches, MAX_FILE_SIZE } from "./types";
 
 // The bucket has no client access. Callers must authorise with the user's own session first.
 const bucket = () => createAdminClient().storage.from("attachments");
 
+const reachable = (url: string) =>
+  isLocalSupabase(env.supabaseUrl) ? url.replace(env.supabaseUrl, LOCAL_STORAGE_PATH) : url;
+
 export async function createUploadUrl(path: string) {
   const { data, error } = await bucket().createSignedUploadUrl(path);
   if (error) throw new Error("Could not prepare upload");
-  return data.signedUrl;
+  return reachable(data.signedUrl);
 }
 
 /** Reads the stored file itself; nothing the browser said about it is trusted. */
@@ -34,5 +39,5 @@ export async function createDownloadUrl(path: string, name: string, inline: bool
     inline ? {} : { download: name },
   );
   if (error) throw new Error("Could not open file");
-  return data.signedUrl;
+  return reachable(data.signedUrl);
 }

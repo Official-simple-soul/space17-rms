@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { buttonStyles } from "@/components/ui/button";
 import { Card, Notice, PageHeader } from "@/components/ui/surface";
+import { ExpenseStatusBadge } from "@/features/expenses/components/expense-badges";
+import { listRequestExpenses } from "@/features/expenses/repository";
 import { MarkRead } from "@/features/notifications/components/mark-read";
 import { getOrganisation } from "@/features/organisations/repository";
 import { PaymentsCard } from "@/features/payments/components/payments-card";
@@ -22,7 +24,7 @@ import { StatusBadge } from "@/features/requests/components/status-badge";
 import { getMyWork, getRequest } from "@/features/requests/repository";
 import { listApprovers } from "@/features/workflows/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatMoney, todayIn } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Request" };
 
@@ -40,6 +42,11 @@ export default async function RequestPage({
   const base = `/o/${orgSlug}/requests`;
   const reassignable = request.active_step && can("config.manage");
   const approvers = reassignable ? await listApprovers(organisation.id, "requests.approve") : [];
+  const expenses = await listRequestExpenses(request.id);
+  const spendable =
+    request.is_requester &&
+    can("expenses.create") &&
+    ["approved", "part_paid", "paid", "received"].includes(request.status);
   const editable =
     request.is_requester && (request.status === "draft" || request.status === "returned");
   const withdrawable =
@@ -47,7 +54,7 @@ export default async function RequestPage({
   const lastReason = request.events.find((e) => e.type === "returned" || e.type === "rejected");
   return (
     <>
-      {work.unread > 0 && <MarkRead orgId={organisation.id} requestId={request.id} />}
+      {work.unread > 0 && <MarkRead orgId={organisation.id} subjectId={request.id} />}
       <Link href={base} className="text-muted mb-4 inline-block text-sm font-medium">
         ← Requests
       </Link>
@@ -108,10 +115,36 @@ export default async function RequestPage({
           <PaymentsCard
             request={request}
             filesBase={`/o/${orgSlug}/files`}
-            today={new Intl.DateTimeFormat("en-CA", { timeZone: details.timezone }).format(
-              new Date(),
-            )}
+            today={todayIn(details.timezone)}
           />
+          {(spendable || expenses.length > 0) && (
+            <Card className="space-y-4 p-6">
+              <h2 className="font-semibold">Expenses</h2>
+              {expenses.length > 0 && (
+                <ul className="space-y-3 text-sm">
+                  {expenses.map((e) => (
+                    <li key={e.id} className="flex items-start justify-between gap-3">
+                      <Link href={`/o/${orgSlug}/expenses/${e.id}`} className="hover:underline">
+                        {e.description || "Untitled expense"}
+                        <span className="text-muted block text-xs tabular-nums">
+                          {formatMoney(e.total_minor, request.currency)}
+                        </span>
+                      </Link>
+                      <ExpenseStatusBadge status={e.status} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {spendable && (
+                <Link
+                  href={`/o/${orgSlug}/expenses/new?request=${request.id}`}
+                  className={buttonStyles({ variant: "outline", size: "sm" })}
+                >
+                  Add expense
+                </Link>
+              )}
+            </Card>
+          )}
           {request.steps.length > 0 && (
             <Card className="space-y-5 p-6">
               <div className="flex items-center justify-between gap-2">

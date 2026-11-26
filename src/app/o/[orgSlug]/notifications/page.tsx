@@ -42,7 +42,7 @@ export default async function NotificationsPage({
             {rows.map((n) => (
               <li key={n.id}>
                 <Link
-                  href={notificationPath(`/o/${orgSlug}`, n.type, n.request_id)}
+                  href={notificationPath(`/o/${orgSlug}`, n.type, n)}
                   className="flex gap-3 px-5 py-4 text-sm hover:bg-neutral-50"
                 >
                   <span
@@ -64,7 +64,7 @@ export default async function NotificationsPage({
           <EmptyState
             icon={Bell}
             title={unread ? "Nothing unread" : "No notifications yet"}
-            description="Updates about your requests and approvals will appear here."
+            description="Updates about your requests, expenses and reports will appear here."
           />
         )}
         <Pager

@@ -174,7 +174,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await confirm(payer);
   await expect(payer.getByText("Part paid", { exact: true })).toBeVisible();
   await expect(payer.getByText(/PAY-\d{4}-0001/).first()).toBeVisible();
-  await payer.locator('input[type="file"]').setInputFiles({
+  await payer.locator('input[type="file"]:not([capture])').setInputFiles({
     name: "transfer.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\nproof"),
@@ -257,7 +257,7 @@ test("staff join with a code after their email is confirmed and an admin approve
   await guest.getByLabel("Full name").fill("Ngozi Eze");
   await guest.getByLabel("Work email").fill(email);
   await guest.getByRole("button", { name: "Ask to join" }).click();
-  await expect(guest.getByText("That code isn't valid.")).toBeVisible();
+  await expect(guest.getByText("That code isn't valid.").first()).toBeVisible();
   await guest.getByLabel("Join code").fill(code.toLowerCase());
   await guest.getByRole("button", { name: "Ask to join" }).click();
   await expect(guest.getByText("Check your email to confirm")).toBeVisible();

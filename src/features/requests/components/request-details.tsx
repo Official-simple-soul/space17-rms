@@ -1,37 +1,11 @@
-import { Check, Circle, Clock, Paperclip, X } from "lucide-react";
+import { Check, Circle, Clock, X } from "lucide-react";
 import { Card } from "@/components/ui/surface";
-import { formatSize } from "@/lib/files/types";
+import { Term } from "@/components/ui/term";
+import { Files } from "@/features/files/components/files";
+import { TemplateAnswers } from "@/features/templates/components/template-answers";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import type { Attachment, RequestDetail } from "../schema";
-
-export function Files({ files, base }: { files: Attachment[]; base: string }) {
-  return (
-    <ul className="space-y-2">
-      {files.map((f) => (
-        <li key={f.id}>
-          <a
-            href={`${base}/${f.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-control border-line flex min-h-11 items-center gap-3 border px-3 text-sm hover:border-black"
-          >
-            <Paperclip className="text-muted size-4 shrink-0" aria-hidden />
-            <span className="min-w-0 flex-1 truncate">{f.name}</span>
-            <span className="text-muted shrink-0 text-xs">{formatSize(f.size)}</span>
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-const term = (label: string, value: React.ReactNode) => (
-  <div key={label}>
-    <dt className="text-muted text-xs">{label}</dt>
-    <dd className="mt-0.5 text-sm break-words whitespace-pre-wrap">{value}</dd>
-  </div>
-);
+import type { RequestDetail } from "../schema";
 
 export function RequestDetails({
   request: r,
@@ -43,28 +17,24 @@ export function RequestDetails({
   const money = (minor: number) => formatMoney(minor, r.currency);
   const reduced = r.items.some((i) => i.approved_minor !== null);
   const general = r.attachments.filter((a) => a.field_key === null);
-  const answer = (f: RequestDetail["fields"][number]) => {
-    if (f.type === "file") {
-      const files = r.attachments.filter((a) => a.field_key === f.key);
-      return files.length ? <Files files={files} base={filesBase} /> : "—";
-    }
-    const value = r.form_data[f.key];
-    if (value === undefined || value === "") return f.type === "checkbox" ? "No" : "—";
-    if (typeof value === "boolean") return value ? "Yes" : "No";
-    if (f.type === "money" && typeof value === "number") return money(value);
-    if (f.type === "date" && typeof value === "string") return formatDate(value);
-    return String(value);
-  };
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <dl className="grid gap-5 sm:grid-cols-2">
-          <div className="sm:col-span-2">{term("Purpose", r.purpose || "—")}</div>
-          {term("Requested by", r.requester)}
-          {term("Department", r.department?.name ?? "—")}
-          {term("Category", r.category.name)}
-          {term("Needed by", r.needed_by ? formatDate(r.needed_by) : "—")}
-          {r.fields.map((f) => term(f.label, answer(f)))}
+          <Term label="Purpose" className="sm:col-span-2">
+            {r.purpose || "—"}
+          </Term>
+          <Term label="Requested by">{r.requester}</Term>
+          <Term label="Department">{r.department?.name ?? "—"}</Term>
+          <Term label="Category">{r.category.name}</Term>
+          <Term label="Needed by">{r.needed_by ? formatDate(r.needed_by) : "—"}</Term>
+          <TemplateAnswers
+            fields={r.fields}
+            data={r.form_data}
+            files={r.attachments}
+            filesBase={filesBase}
+            currency={r.currency}
+          />
         </dl>
       </Card>
       {r.items.length > 0 && (

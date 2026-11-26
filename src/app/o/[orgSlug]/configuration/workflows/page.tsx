@@ -5,7 +5,7 @@ import { buttonStyles } from "@/components/ui/button";
 import { ConfigurationHeader } from "@/features/configuration/components/configuration-header";
 import { WorkflowsView } from "@/features/workflows/components/workflows-view";
 import { listWorkflowDetails } from "@/features/workflows/repository";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
 export const metadata: Metadata = { title: "Workflows" };
@@ -14,7 +14,7 @@ export default async function WorkflowsPage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/workflows">) {
   const { orgSlug } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const [rows, view] = await Promise.all([listWorkflowDetails(organisation.id), getListView()]);
   const base = `/o/${orgSlug}/configuration/workflows`;
   return (

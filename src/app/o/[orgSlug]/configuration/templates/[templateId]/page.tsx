@@ -7,7 +7,7 @@ import { ArchiveTemplate, TemplateEditor } from "@/features/templates/components
 import { TemplateFields } from "@/features/templates/components/template-fields";
 import { getTemplate } from "@/features/templates/repository";
 import { TEMPLATE_KINDS } from "@/features/templates/schema";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 
 export const metadata: Metadata = { title: "Template" };
 
@@ -15,7 +15,7 @@ export default async function TemplatePage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/templates/[templateId]">) {
   const { orgSlug, templateId } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const template = await getTemplate(organisation.id, templateId);
   if (!template && templateId !== "new") notFound();
   return (

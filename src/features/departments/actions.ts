@@ -47,5 +47,5 @@ export async function archiveDepartment(_: ActionState, form: FormData): Promise
   });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  return { ok: true };
+  return { ok: true, message: "Department archived." };
 }

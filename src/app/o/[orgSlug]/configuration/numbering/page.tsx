@@ -3,7 +3,7 @@ import { ConfigurationHeader } from "@/features/configuration/components/configu
 import { NumberingView } from "@/features/numbering/components/numbering-view";
 import { listNumbering } from "@/features/numbering/repository";
 import { getOrganisation } from "@/features/organisations/repository";
-import { requireConfiguration } from "@/lib/auth/configuration";
+import { requireSection } from "@/lib/auth/access";
 
 export const metadata: Metadata = { title: "Numbering" };
 
@@ -11,7 +11,7 @@ export default async function NumberingPage({
   params,
 }: PageProps<"/o/[orgSlug]/configuration/numbering">) {
   const { orgSlug } = await params;
-  const { organisation } = await requireConfiguration(orgSlug);
+  const { organisation } = await requireSection(orgSlug, "configuration");
   const [rows, details] = await Promise.all([
     listNumbering(organisation.id),
     getOrganisation(organisation.id),

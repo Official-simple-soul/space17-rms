@@ -31,7 +31,7 @@ function ApproveForm({
   });
   const total = items.reduce((sum, i) => sum + (read(i) ?? 0), 0);
   return (
-    <ActionForm action={decideRequest} submit="Approve" variant="brand" closeOnSuccess toastErrors>
+    <ActionForm action={decideRequest} submit="Approve" variant="brand" closeOnSuccess>
       {(state) => (
         <>
           <input type="hidden" name="stepId" value={stepId} />
@@ -92,7 +92,6 @@ function ReasonForm({
       submit={decision === "return" ? "Return request" : "Reject request"}
       variant="brand"
       closeOnSuccess
-      toastErrors
     >
       {(state) => (
         <>

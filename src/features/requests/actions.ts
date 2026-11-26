@@ -1,15 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { z } from "zod";
+import { badFile, uploadInput, type UploadStart } from "@/features/files/schema";
+import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
-import { createUploadUrl, deleteFiles, inspectFile } from "@/lib/files/storage";
-import { FILE_TYPES, isFileType, MAX_FILE_SIZE } from "@/lib/files/types";
-import { optionalId } from "@/lib/forms";
+import { redirectWith } from "@/lib/flash";
+import { deleteFiles } from "@/lib/files/storage";
 import { parseSaved, readJson } from "@/lib/rpc-json";
-import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { previewSteps } from "./repository";
 import { draftSchema, type Draft } from "./schema";
@@ -19,37 +18,13 @@ const lock = z.coerce.number().int();
 const reason = z.string().trim().min(5, "Give a reason of at least 5 characters.").max(1000);
 const refresh = () => revalidatePath("/o/[orgSlug]", "layout");
 
-export async function startRequest(_: ActionState, form: FormData): Promise<ActionState> {
-  const input = z
-    .object({
-      orgId: z.uuid(),
-      slug,
-      categoryId: z.uuid("Choose a category."),
-      departmentId: optionalId,
-    })
-    .safeParse(Object.fromEntries(form));
-  if (!input.success) return invalid(input.error);
-  const v = input.data;
-  const { data, error } = await (
-    await createClient()
-  ).rpc("save_request", {
-    p_org: v.orgId,
-    p_id: null as unknown as string,
-    p_category: v.categoryId,
-    p_department: v.departmentId as string,
-    p_title: "",
-    p_purpose: "",
-    p_needed_by: null as unknown as string,
-    p_form: {},
-    p_items: [],
-    p_lock: null as unknown as number,
-  });
-  if (error) return failure(error);
-  redirect(`/o/${v.slug}/requests/${parseSaved(data).id}/edit`);
-}
-
 type SaveResult =
-  | { ok: true; version: number; steps: { name: string; who: string; required: number }[] }
+  | {
+      ok: true;
+      id: string;
+      version: number;
+      steps: { name: string; who: string; required: number }[];
+    }
   | { ok: false; message: string; stale: boolean };
 
 export async function saveDraft(input: Draft): Promise<SaveResult> {
@@ -65,7 +40,7 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
     await createClient()
   ).rpc("save_request", {
     p_org: v.orgId,
-    p_id: v.id,
+    p_id: v.id as string,
     p_category: v.categoryId,
     p_department: v.departmentId as string,
     p_title: v.title,
@@ -73,7 +48,7 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
     p_needed_by: v.neededBy as string,
     p_form: v.form,
     p_items: v.items,
-    p_lock: v.lock,
+    p_lock: v.lock as number,
   });
   if (error)
     return {
@@ -84,7 +59,7 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
   const total = v.items.reduce((sum, i) => sum + Math.round(i.quantity * i.unit_price_minor), 0);
   return {
     ok: true,
-    version: parseSaved(data).version,
+    ...parseSaved(data),
     steps: await previewSteps(v.categoryId, total),
   };
 }
@@ -118,7 +93,7 @@ export async function deleteDraft(_: ActionState, form: FormData): Promise<Actio
   if (error) return failure(error);
   await deleteFiles(data);
   refresh();
-  redirect(`/o/${input.data.slug}/requests`);
+  return redirectWith(`/o/${input.data.slug}/requests`, "Draft deleted.");
 }
 
 export async function withdrawRequest(_: ActionState, form: FormData): Promise<ActionState> {
@@ -207,74 +182,27 @@ export async function addComment(_: ActionState, form: FormData): Promise<Action
   ).rpc("comment_on_request", { p_id: input.data.id, p_body: input.data.body });
   if (error) return failure(error);
   refresh();
-  return { ok: true };
+  return { ok: true, message: "Comment added." };
 }
 
-// Files ---------------------------------------------------------------------
-
-const fileInput = z.object({
+const fileInput = uploadInput.extend({
   requestId: z.uuid(),
   field: z.string().max(40).nullable(),
-  name: z.string().trim().min(1).max(255),
-  type: z.string().refine(isFileType),
-  size: z.number().int().min(1).max(MAX_FILE_SIZE),
 });
 
-export async function startUpload(
-  input: z.input<typeof fileInput>,
-): Promise<{ ok: true; id: string; url: string } | { ok: false; message: string }> {
+export async function startUpload(input: z.input<typeof fileInput>): Promise<UploadStart> {
   const parsed = fileInput.safeParse(input);
-  if (!parsed.success)
-    return {
-      ok: false,
-      message: `Use ${[...new Set(Object.values(FILE_TYPES))].join(", ")} files up to 10 MB.`,
-    };
+  if (!parsed.success) return badFile;
   const v = parsed.data;
-  const { data, error } = await (
-    await createClient()
-  ).rpc("start_attachment", {
-    p_request: v.requestId,
-    p_field: v.field as string,
-    p_name: v.name,
-    p_mime: v.type,
-    p_size: v.size,
-  });
-  if (error) return { ok: false, message: failure(error).message! };
-  const { id, path } = z.object({ id: z.uuid(), path: z.string() }).parse(data);
-  return { ok: true, id, url: await createUploadUrl(path) };
-}
-
-export async function finishUpload(
-  id: string,
-): Promise<{ ok: true; size: number } | { ok: false; message: string }> {
-  const failed = { ok: false as const, message: "That file couldn't be read. Try another." };
-  if (!z.uuid().safeParse(id).success) return failed;
-  // The caller's session proves the upload is theirs before the server touches storage.
-  const { data: pending } = await (
-    await createClient()
-  )
-    .rpc("get_pending_attachment", { p_id: id })
-    .maybeSingle();
-  if (!pending) return failed;
-  const file = await inspectFile(pending.storage_path, pending.mime);
-  const admin = createAdminClient();
-  const { error } = file
-    ? await admin.rpc("finish_attachment", {
-        p_id: id,
-        p_size: file.size,
-        p_sha256: file.sha256,
-      })
-    : { error: null };
-  if (file && !error) return { ok: true, size: file.size };
-  await deleteFiles([pending.storage_path]);
-  await admin.rpc("discard_attachment", { p_id: id });
-  return error ? { ok: false, message: failure(error).message! } : failed;
-}
-
-export async function removeUpload(id: string): Promise<{ ok: boolean; message?: string }> {
-  if (!z.uuid().safeParse(id).success) return { ok: false };
-  const { data, error } = await (await createClient()).rpc("remove_attachment", { p_id: id });
-  if (error) return { ok: false, message: failure(error).message };
-  if (data) await deleteFiles([data]);
-  return { ok: true };
+  return uploadLink(
+    await (
+      await createClient()
+    ).rpc("start_attachment", {
+      p_request: v.requestId,
+      p_field: v.field as string,
+      p_name: v.name,
+      p_mime: v.type,
+      p_size: v.size,
+    }),
+  );
 }

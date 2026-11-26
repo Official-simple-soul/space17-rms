@@ -74,8 +74,12 @@ export function JoinCodeCard({ orgId, code, url }: { orgId: string; code: string
               size="sm"
               variant="outline"
               onClick={async () => {
-                await navigator.clipboard.writeText(code);
-                toast.success("Code copied");
+                try {
+                  await navigator.clipboard.writeText(code);
+                  toast.success("Code copied.");
+                } catch {
+                  toast.error("Couldn't copy. Select the code and copy it yourself.");
+                }
               }}
             >
               <Copy className="size-4" aria-hidden />

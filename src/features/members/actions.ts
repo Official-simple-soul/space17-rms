@@ -9,9 +9,11 @@ import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
 import { listRoles } from "@/features/roles/repository";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { requireSession } from "@/lib/auth/session";
 import { optionalId } from "@/lib/forms";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { invitationMessage } from "@/lib/email/invitation-message";
 import { createClient } from "@/lib/supabase/server";
 import { parseInvites } from "./csv";
 import { emailInvitation, joinLink } from "./email";
@@ -45,10 +47,8 @@ export async function inviteMember(_: ActionState, form: FormData): Promise<Acti
   refresh();
   return {
     ok: true,
-    message: sent
-      ? "Invitation emailed. You can also copy the link now; it won't be shown again."
-      : "Invitation created. Copy the link now; it won't be shown again.",
-    data: { links: `${v.email.toLowerCase()},${joinLink(data)}` },
+    message: invitationMessage(sent),
+    data: { email: v.email.toLowerCase(), link: joinLink(data) },
   };
 }
 
@@ -117,7 +117,7 @@ export async function revokeInvitation(_: ActionState, form: FormData): Promise<
   ).rpc("revoke_invitation", { p_org: input.data.orgId, p_id: input.data.id });
   if (error) return failure(error);
   refresh();
-  return { ok: true };
+  return { ok: true, message: "Invitation revoked." };
 }
 
 export async function grantRole(_: ActionState, form: FormData): Promise<ActionState> {
@@ -152,7 +152,7 @@ export async function revokeRole(_: ActionState, form: FormData): Promise<Action
   ).rpc("revoke_role", { p_org: input.data.orgId, p_grant: input.data.grantId });
   if (error) return failure(error);
   refresh();
-  return { ok: true };
+  return { ok: true, message: "Role removed." };
 }
 
 export async function setDepartments(_: ActionState, form: FormData): Promise<ActionState> {
@@ -194,7 +194,8 @@ export async function setStatus(_: ActionState, form: FormData): Promise<ActionS
   });
   if (error) return failure(error);
   refresh();
-  if (v.status === "left") redirect(`/o/${v.slug}/members`);
+  if (v.status === "left")
+    return redirectWith(`/o/${v.slug}/members`, "Person removed from the organisation.");
   return { ok: true, message: "Access updated." };
 }
 
@@ -239,7 +240,7 @@ export async function registerFromInvitation(_: ActionState, form: FormData): Pr
 async function join(value: string): Promise<ActionState> {
   const { data, error } = await (await createClient()).rpc("accept_invitation", { p_token: value });
   if (error) return failure(error);
-  redirect(`/o/${data}`);
+  return redirectWith(`/o/${data}`, "Welcome. You've joined the organisation.");
 }
 
 export async function acceptInvitation(_: ActionState, form: FormData): Promise<ActionState> {

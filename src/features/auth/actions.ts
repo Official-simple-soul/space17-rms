@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { env } from "@/config/env";
 import { invalid, type ActionState } from "@/lib/action-state";
+import { redirectWith } from "@/lib/flash";
 import { requireSession } from "@/lib/auth/session";
 import { safePath } from "@/lib/safe-redirect";
 import { createClient } from "@/lib/supabase/server";
@@ -27,13 +28,13 @@ export async function signIn(_: ActionState, form: FormData): Promise<ActionStat
   const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (data?.nextLevel === "aal2" && data.currentLevel !== "aal2")
     redirect(`/mfa?next=${encodeURIComponent(next)}`);
-  redirect(next);
+  return redirectWith(next, "Signed in.");
 }
 
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut({ scope: "local" });
-  redirect("/sign-in");
+  return redirectWith("/sign-in", "You're signed out.");
 }
 
 export async function requestReset(_: ActionState, form: FormData): Promise<ActionState> {
@@ -65,7 +66,7 @@ export async function resetPassword(_: ActionState, form: FormData): Promise<Act
           : "We couldn't update the password. Request a new link.",
     };
   await supabase.auth.signOut({ scope: "others" });
-  redirect("/");
+  return redirectWith("/", "Password changed.");
 }
 
 export async function startEnrolment(): Promise<
@@ -83,7 +84,8 @@ export async function startEnrolment(): Promise<
     issuer: "space17 RMS",
   });
   if (error) return { error: "We couldn't start setup. Please try again." };
-  return { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret };
+  // The image ends with a line break, which next/image rejects in development.
+  return { factorId: data.id, qr: data.totp.qr_code.trim(), secret: data.totp.secret };
 }
 
 export async function verifyCode(_: ActionState, form: FormData): Promise<ActionState> {
@@ -95,5 +97,5 @@ export async function verifyCode(_: ActionState, form: FormData): Promise<Action
     code: input.data.code,
   });
   if (error) return { message: "That code didn't work. Check your app and try again." };
-  redirect(safePath(input.data.next));
+  return redirectWith(safePath(input.data.next), "Code verified.");
 }

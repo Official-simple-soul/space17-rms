@@ -23,6 +23,9 @@ insert into department_members (org_id, department_id, membership_id)
   where m.org_id = pg_temp.o('big-org') and p.full_name <= 'Person 0005';
 insert into membership_roles (org_id, membership_id, role_id)
   select org_id, id, pg_temp.o('staff') from memberships where org_id = pg_temp.o('big-org') limit 3;
+insert into membership_roles (org_id, membership_id, role_id)
+  select m.org_id, m.id, r.id from memberships m join profiles p on p.user_id = m.user_id and p.full_name = 'Person 0001'
+  join roles r on r.org_id = m.org_id and r.system_key = 'admin';
 update memberships set status = 'left' where user_id = (select user_id from profiles where full_name = 'Person 1200');
 select set_config('request.jwt.claims', json_build_object('sub', (select user_id from profiles where full_name = 'Person 0001'), 'role', 'authenticated', 'aal', 'aal1')::text, true);
 set local role authenticated;

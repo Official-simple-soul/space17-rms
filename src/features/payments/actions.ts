@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { badFile, uploadInput, type UploadStart } from "@/features/files/schema";
+import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
-import { createUploadUrl } from "@/lib/files/storage";
-import { isFileType, MAX_FILE_SIZE } from "@/lib/files/types";
 import { parseMoney } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { paymentMethod } from "./schema";
@@ -96,32 +96,20 @@ export async function revealBankAccount(
   return error ? { message: failure(error).message! } : { number: data };
 }
 
-export async function startProof(input: {
-  paymentId: string;
-  name: string;
-  type: string;
-  size: number;
-}): Promise<{ ok: true; id: string; url: string } | { ok: false; message: string }> {
-  const parsed = z
-    .object({
-      paymentId: z.uuid(),
-      name: z.string().trim().min(1).max(255),
-      type: z.string().refine(isFileType),
-      size: z.number().int().min(1).max(MAX_FILE_SIZE),
-    })
-    .safeParse(input);
-  if (!parsed.success)
-    return { ok: false, message: "Use a PDF, photo, Word or Excel file up to 10 MB." };
+const proofInput = uploadInput.extend({ paymentId: z.uuid() });
+
+export async function startProof(input: z.input<typeof proofInput>): Promise<UploadStart> {
+  const parsed = proofInput.safeParse(input);
+  if (!parsed.success) return badFile;
   const v = parsed.data;
-  const { data, error } = await (
-    await createClient()
-  ).rpc("start_payment_proof", {
-    p_payment: v.paymentId,
-    p_name: v.name,
-    p_mime: v.type,
-    p_size: v.size,
-  });
-  if (error) return { ok: false, message: failure(error).message! };
-  const { id, path } = z.object({ id: z.uuid(), path: z.string() }).parse(data);
-  return { ok: true, id, url: await createUploadUrl(path) };
+  return uploadLink(
+    await (
+      await createClient()
+    ).rpc("start_payment_proof", {
+      p_payment: v.paymentId,
+      p_name: v.name,
+      p_mime: v.type,
+      p_size: v.size,
+    }),
+  );
 }
