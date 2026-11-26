@@ -43,7 +43,7 @@ export default async function NotificationsPage({
               <li key={n.id}>
                 <Link
                   href={notificationPath(`/o/${orgSlug}`, n.type, n)}
-                  className="flex gap-3 px-5 py-4 text-sm hover:bg-neutral-50"
+                  className="flex gap-3 px-5 py-4 text-sm hover:bg-white/60"
                 >
                   <span
                     className={`mt-1.5 size-2 shrink-0 rounded-full ${n.read_at ? "bg-transparent" : "bg-brand"}`}

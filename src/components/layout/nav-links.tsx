@@ -81,13 +81,19 @@ export function NavLinks({ items }: { items: NavItem[] }) {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "rounded-control flex items-center gap-3 px-3 py-2.5 text-sm font-medium",
+                "group rounded-control flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 active
-                  ? "text-ink bg-white"
-                  : "text-neutral-300 hover:bg-white/10 hover:text-white",
+                  ? "text-ink bg-white shadow-[0_6px_20px_-6px_rgb(0_0_0/0.5)]"
+                  : "text-neutral-300 hover:translate-x-0.5 hover:bg-white/[0.08] hover:text-white",
               )}
             >
-              <Icon className={cn("size-4.5", active && "text-brand")} aria-hidden />
+              <Icon
+                className={cn(
+                  "size-4.5 transition-transform duration-300 ease-(--ease-spring) group-hover:scale-110",
+                  active && "text-brand",
+                )}
+                aria-hidden
+              />
               {item.label}
               <NavCount count={item.count} className="ml-auto" />
             </Link>

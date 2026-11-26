@@ -26,10 +26,10 @@ export function ConfirmDialog({
     <Primitive.Root open={open} onOpenChange={onOpenChange}>
       {trigger && <Primitive.Trigger asChild>{trigger}</Primitive.Trigger>}
       <Primitive.Portal>
-        <Primitive.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <Primitive.Overlay className="data-[state=open]:animate-fade fixed inset-0 z-50 bg-black/25 backdrop-blur-[3px]" />
         <Primitive.Content
           {...(description ? {} : { "aria-describedby": undefined })}
-          className="rounded-card border-line bg-surface text-ink fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 border p-6 text-left shadow-xl"
+          className="rounded-card data-[state=open]:animate-pop-in text-ink fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 -translate-y-1/2 border border-white/70 bg-white/85 p-6 text-left shadow-[0_30px_80px_-20px_rgb(60_10_15/0.4)] backdrop-blur-2xl"
         >
           <Primitive.Title className="text-lg font-semibold">{title}</Primitive.Title>
           {description && (

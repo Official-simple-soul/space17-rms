@@ -34,7 +34,7 @@ async function enrol(page: Page) {
   await page.getByRole("button", { name: "Set up two-step verification" }).click();
   const secret = (await page.locator("code").textContent())!.trim();
   await page.getByLabel("6-digit code").fill(totp(secret));
-  await page.getByRole("button", { name: "Verify" }).click();
+  // The code sends itself once all six digits are in.
   return secret;
 }
 
@@ -82,38 +82,47 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await expect(owner.getByRole("heading", { name: "Hello, Ada" })).toBeVisible();
   const slug = `acme-${id}`;
   await expect(owner).toHaveURL(new RegExp(`/o/${slug}$`));
-  await owner.screenshot({ path: "test-results/dashboard.png", fullPage: true });
+  await owner.screenshot({
+    animations: "disabled",
+    path: "test-results/dashboard.png",
+    fullPage: true,
+  });
 
   await owner.goto(`/o/${slug}/settings`);
   await owner.getByLabel("Organisation name").fill(`Acme Group ${id}`);
   await owner.getByRole("button", { name: "Save changes" }).click();
-  await expect(owner.getByText("Confirm two-step verification")).toBeVisible();
+  await expect(owner.getByText("Confirm two-step verification").first()).toBeVisible();
   await owner.goto("/account");
   const secret = await enrol(owner);
-  await expect(owner.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(owner.getByText("Two-step verification is on.").first()).toBeVisible();
   await owner.goto(`/o/${slug}/settings`);
   await owner.getByLabel("Organisation name").fill(`Acme Group ${id}`);
   await owner.getByRole("button", { name: "Save changes" }).click();
-  await expect(owner.getByText("Organisation details saved.")).toBeVisible();
+  await expect(owner.getByText("Organisation details saved.").first()).toBeVisible();
   await owner.goto(`/o/${slug}/audit`);
-  await expect(owner.getByText("Organisation updated")).toBeVisible();
+  await expect(owner.getByText("Organisation updated").first()).toBeVisible();
   await owner.goto(`/o/${slug}/members`);
   await expect(owner.getByRole("row", { name: /Ada Owner.*Organisation admin/ })).toBeVisible();
 
   // Reused link, foreign pages and the MFA challenge on the next sign-in.
   const stranger = await (await browser.newContext()).newPage();
   await stranger.goto(link);
-  await expect(stranger.getByText("already been used")).toBeVisible();
+  await expect(stranger.getByText("already been used").first()).toBeVisible();
   expect((await owner.goto("/platform"))?.status()).toBe(404);
   await page.goto(`/o/${slug}`);
-  await expect(page.getByText("We couldn't find that page")).toBeVisible();
+  await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
 
   await signIn(stranger, ownerEmail);
   await expect(stranger).toHaveURL(/mfa/);
   await stranger.goto(`/o/${slug}`);
   await expect(stranger).toHaveURL(/mfa/);
+  await stranger.getByLabel("6-digit code").fill("000000");
+  await expect(
+    stranger.locator("#content, main").getByText("That code didn't work").first(),
+  ).toBeVisible();
+  await expect(stranger).toHaveURL(/mfa/);
+  await stranger.screenshot({ animations: "disabled", path: "test-results/mfa-wrong.png" });
   await stranger.getByLabel("6-digit code").fill(totp(secret));
-  await stranger.getByRole("button", { name: "Verify" }).click();
   await expect(stranger).toHaveURL(new RegExp(`/o/${slug}$`));
   await expect(stranger.getByLabel("Switch organisation")).toHaveCount(0);
 
@@ -126,7 +135,11 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
   await expect(page.getByRole("row", { name: new RegExp(`Acme Group ${id}`) })).toContainText(
     /suspended/i,
   );
-  await page.screenshot({ path: "test-results/platform.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/platform.png",
+    fullPage: true,
+  });
   await owner.goto(`/o/${slug}`);
   await expect(owner.getByRole("heading", { name: /is suspended/ })).toBeVisible();
 });
@@ -137,7 +150,7 @@ test("password reset changes the password", async ({ page, request }) => {
   await page.goto("/forgot-password");
   await page.getByLabel("Email").fill(email);
   await page.getByRole("button", { name: "Send reset link" }).click();
-  await expect(page.getByText("a reset link is on its way")).toBeVisible();
+  await expect(page.getByText("a reset link is on its way").first()).toBeVisible();
   let body = "";
   await expect
     .poll(async () => {
@@ -165,16 +178,16 @@ test("password reset changes the password", async ({ page, request }) => {
 
 test("access request and mobile layout", async ({ page }) => {
   await page.goto("/sign-in");
-  await page.screenshot({ path: "test-results/sign-in.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/sign-in.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/request-access");
-  await page.screenshot({ path: "test-results/mobile.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/mobile.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByLabel("Organisation name").fill("Test Org");
   await page.getByLabel("Your name").fill("Test Person");
   await page.getByLabel("Work email").fill(`ask-${id}@test.local`);
   await page.getByRole("button", { name: "Request access" }).click();
-  await expect(page.getByText("Thanks.")).toBeVisible();
+  await expect(page.getByText("Thanks.").first()).toBeVisible();
 });
 
 test("sign out asks for confirmation", async ({ page }) => {
@@ -185,11 +198,11 @@ test("sign out asks for confirmation", async ({ page }) => {
   await page.getByRole("button", { name: "Sign out" }).click();
   const dialog = page.getByRole("alertdialog");
   await expect(dialog).toBeVisible();
-  await page.screenshot({ path: "test-results/sign-out.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/sign-out.png" });
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(page).toHaveURL(/no-organisation/);
   await page.goto("/mfa");
-  await page.screenshot({ path: "test-results/mfa.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/mfa.png" });
   await page.getByRole("button", { name: "Sign out" }).click();
   await dialog.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/sign-in/);
@@ -236,8 +249,24 @@ test("someone in two organisations can switch and returns to the last one", asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await page.locator("select:visible").selectOption(`beta-${id}`);
   await expect(page).toHaveURL(new RegExp(`/o/beta-${id}$`));
-  await page.screenshot({ path: "test-results/mobile-org.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/mobile-org.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.goto("/");
   await expect(page).toHaveURL(new RegExp(`/o/beta-${id}$`));
+});
+
+test("password can be shown and hidden", async ({ page }) => {
+  await page.goto("/sign-in");
+  const field = page.getByLabel("Password", { exact: true });
+  await field.fill("secret-words");
+  await expect(field).toHaveAttribute("type", "password");
+  await page.getByLabel("Email").focus();
+  await page.getByRole("button", { name: "Show password" }).click();
+  await expect(field).toHaveAttribute("type", "text");
+  await expect(field).toHaveValue("secret-words");
+  await page.waitForTimeout(400);
+  await page.locator("form").screenshot({ path: "test-results/password-shown.png" });
+  await page.getByRole("button", { name: "Hide password" }).click();
+  await expect(field).toHaveAttribute("type", "password");
+  await page.locator("form").screenshot({ path: "test-results/password-hidden.png" });
 });

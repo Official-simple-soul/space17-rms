@@ -37,11 +37,11 @@ export function Toaster() {
         classNames: {
           // Usable while a side panel is open.
           toast:
-            "pointer-events-auto! rounded-control! gap-3! border! px-4! py-3.5! font-sans! shadow-lg!",
+            "pointer-events-auto! rounded-control! gap-3! border! px-4! py-3.5! font-sans! shadow-[0_16px_40px_-12px_rgb(10_10_10/0.45)]! backdrop-blur-xl!",
           title: "text-sm! font-medium!",
-          success: "bg-ink! text-white! border-ink!",
-          error: "bg-brand! text-white! border-brand!",
-          closeButton: "bg-surface! text-ink! border-line!",
+          success: "bg-ink/90! text-white! border-white/10!",
+          error: "bg-brand/95! text-white! border-white/15!",
+          closeButton: "bg-white! text-ink! border-line!",
         },
       }}
     />

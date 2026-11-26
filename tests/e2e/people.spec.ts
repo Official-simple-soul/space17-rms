@@ -9,7 +9,7 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto("/account");
   await enrol(page);
-  await expect(page.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
 
   await page.goto(`${base}/departments`);
   for (const [name, code] of [
@@ -30,7 +30,7 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await page.getByLabel("Email").fill(`head-${id}@test.local`);
   await page.getByLabel("Role", { exact: true }).selectOption({ label: "Head of department" });
   await page.getByRole("button", { name: "Create invitation" }).click();
-  await expect(page.getByText("Choose a department for this role.")).toBeVisible();
+  await expect(page.getByText("Choose a department for this role.").first()).toBeVisible();
   await page.getByLabel("Department", { exact: true }).selectOption({ label: "Finance" });
   await page.getByRole("button", { name: "Create invitation" }).click();
   const link = (await page.getByTestId("join-links").textContent())!;
@@ -39,12 +39,12 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await page.getByRole("button", { name: "Import" }).click();
   await page.getByLabel("One person per line").fill(`bad,Staff\nx-${id}@test.local,Wizard`);
   await page.getByRole("button", { name: "Check and invite" }).click();
-  await expect(page.getByText("No one was invited.")).toBeVisible();
+  await expect(page.getByText("No one was invited.").first()).toBeVisible();
   await page
     .getByLabel("One person per line")
     .fill(`email,role,department\nstaff-${id}@test.local,Staff,OPS`);
   await page.getByRole("button", { name: "Check and invite" }).click();
-  await expect(page.getByText("1 of 1 invited.")).toBeVisible();
+  await expect(page.getByText("1 of 1 invited.").first()).toBeVisible();
 
   const head = await (await browser.newContext()).newPage();
   await head.goto(link);
@@ -54,14 +54,14 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(head.getByRole("heading", { name: "Hello, Henry" })).toBeVisible();
   for (const path of ["members", "departments", "roles"]) {
     await head.goto(`${base}/${path}`);
-    await expect(head.getByText("We couldn't find that page")).toBeVisible();
+    await expect(head.getByText("We couldn't find that page").first()).toBeVisible();
     await expect(head.getByText("Ada Owner")).toHaveCount(0);
   }
   await expect(head.getByText("New role")).toHaveCount(0);
 
   await page.goto(`${base}/departments`);
   await expect(page.getByRole("row", { name: /Finance.*Henry Head/ })).toBeVisible();
-  await page.screenshot({ path: "test-results/departments.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/departments.png" });
   await page.getByRole("link", { name: "1 person" }).click();
   await expect(page.getByRole("heading", { name: "People" })).toBeVisible();
   await expect(page.getByRole("link", { name: /Henry Head/ })).toBeVisible();
@@ -72,9 +72,9 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(page.locator("tbody tr").first()).toContainText("Ada Owner");
   await page.getByRole("button", { name: "Name" }).click();
   await expect(page.locator("tbody tr").first()).toContainText("Henry Head");
-  await page.screenshot({ path: "test-results/people.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/people.png" });
   await page.getByRole("searchbox").fill("nobody");
-  await expect(page.getByText("No matches")).toBeVisible();
+  await expect(page.getByText("No matches").first()).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
   await page.getByRole("button", { name: "Grid view" }).click();
   await expect(page.getByRole("table")).toHaveCount(0);
@@ -84,7 +84,7 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
     "aria-pressed",
     "true",
   );
-  await page.screenshot({ path: "test-results/people-grid.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/people-grid.png" });
   await page.getByRole("button", { name: "List view" }).click();
   await page.getByRole("link", { name: /Invitations/ }).click();
   await expect(page.getByRole("row", { name: /staff-/ })).toBeVisible();
@@ -96,15 +96,19 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(page.getByRole("heading", { name: "Report reader" })).toBeVisible();
   await page.getByLabel("Submit reports").selectOption({ label: "Their department" });
   await page.getByRole("button", { name: "Save role" }).click();
-  await expect(page.getByText("not both")).toBeVisible();
-  await page.screenshot({ path: "test-results/role.png" });
+  await expect(page.getByText("not both").first()).toBeVisible();
+  await page.screenshot({ animations: "disabled", path: "test-results/role.png" });
 
   await page.goto(`${base}/members`);
   await page.getByRole("link", { name: /Henry Head/ }).click();
   await page.getByLabel("Operations").check();
   await page.getByRole("button", { name: "Save departments" }).click();
-  await expect(page.getByText("Departments saved.")).toBeVisible();
-  await page.screenshot({ path: "test-results/member.png", fullPage: true });
+  await expect(page.getByText("Departments saved.").first()).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/member.png",
+    fullPage: true,
+  });
   await page.getByLabel("Reason to suspend").fill("On leave");
   await page.getByRole("button", { name: "Suspend", exact: true }).click();
   await confirm(page);
@@ -130,5 +134,5 @@ test("admin organises departments, roles and people", async ({ page, browser }) 
   await expect(page.getByRole("table")).toBeVisible();
   for (const select of await page.locator("main select:visible").all())
     expect((await select.boundingBox())!.width).toBeGreaterThan(100);
-  await page.screenshot({ path: "test-results/mobile-people.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/mobile-people.png" });
 });

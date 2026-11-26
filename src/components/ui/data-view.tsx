@@ -57,7 +57,8 @@ function rememberView(value: ListView) {
 }
 
 const PAGE_SIZE = 20;
-const control = "h-10 rounded-control border border-line bg-surface px-3 text-sm";
+const control =
+  "h-10 rounded-control border border-ink/10 bg-white/70 px-3 text-sm transition hover:border-ink/20 focus-within:border-brand/50";
 
 /** Standard list: search, filters and sorting live in the URL so a view can be shared. */
 export function DataView<T>({
@@ -164,8 +165,10 @@ export function DataView<T>({
       title={name}
       onClick={() => changeView(value)}
       className={cn(
-        "grid size-8 place-items-center rounded-md",
-        view === value ? "bg-ink text-white" : "text-muted hover:text-ink",
+        "grid size-8 place-items-center rounded-lg transition",
+        view === value
+          ? "bg-ink text-white shadow-sm"
+          : "text-muted hover:text-ink hover:bg-white/70",
       )}
     >
       <Icon className="size-4" aria-hidden />
@@ -176,7 +179,7 @@ export function DataView<T>({
     <section
       aria-label={label}
       aria-busy={pending}
-      className="rounded-card border-line bg-surface border"
+      className="rounded-card glass animate-rise border"
     >
       <div className="border-line flex flex-wrap items-center gap-2 border-b p-3 sm:p-4">
         <label className="relative w-full sm:w-44">
@@ -267,11 +270,11 @@ export function DataView<T>({
           </Button>
         </div>
       ) : view === "grid" ? (
-        <ul className="grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
+        <ul className="stagger grid gap-4 p-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((row) => (
             <li
               key={rowKey(row)}
-              className="rounded-card border-line hover:border-ink border p-5 transition"
+              className="rounded-card lift border border-white/80 bg-white/55 p-5 shadow-[inset_0_1px_0_white]"
             >
               {card(row)}
             </li>
@@ -280,7 +283,7 @@ export function DataView<T>({
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-line text-muted border-b bg-neutral-50 text-xs">
+            <thead className="border-line text-muted border-b bg-white/40 text-xs">
               <tr>
                 {columns.map((c) => {
                   const direction =
@@ -321,7 +324,7 @@ export function DataView<T>({
             </thead>
             <tbody className="divide-line divide-y">
               {items.map((row) => (
-                <tr key={rowKey(row)} className="hover:bg-neutral-50">
+                <tr key={rowKey(row)} className="transition-colors hover:bg-white/60">
                   {columns.map((c) => (
                     <td
                       key={c.key}

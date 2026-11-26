@@ -82,9 +82,13 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto(`${base}/expenses/new`);
   await page.getByRole("button", { name: "Submit expense" }).click();
-  await expect(page.getByText("Say what was bought.")).toBeVisible();
-  await expect(page.getByText("Add the receipt.")).toBeVisible();
-  await page.screenshot({ path: "test-results/expense-mobile.png", fullPage: true });
+  await expect(page.getByText("Say what was bought.").first()).toBeVisible();
+  await expect(page.getByText("Add the receipt.").first()).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/expense-mobile.png",
+    fullPage: true,
+  });
   expect(await fits(page)).toBe(true);
   await fillExpense(page, "Printer paper", "Office Mart", "12,500");
   await page.evaluate(() => document.body.setAttribute("data-same-page", ""));
@@ -108,7 +112,7 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await page.goto(`${base}/expenses`);
   await expect(page.getByRole("row", { name: /Market soap/ })).toContainText("No receipt");
   await page.goto(`${base}/reports`);
-  await expect(page.getByText("We couldn't find that page")).toBeVisible();
+  await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
 
   // Head: accept the clean one together, return the other.
   const boss = await (await browser.newContext()).newPage();
@@ -116,16 +120,20 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await expect(boss.getByRole("link", { name: /Expenses to review/ })).toContainText("2");
   await boss.goto(`${base}/expenses?tab=inbox`);
   await expect(boss.getByRole("button", { name: "Accept 1 ready" })).toBeVisible();
-  await boss.screenshot({ path: "test-results/expense-inbox.png", fullPage: true });
+  await boss.screenshot({
+    animations: "disabled",
+    path: "test-results/expense-inbox.png",
+    fullPage: true,
+  });
   await boss.getByRole("button", { name: "Accept 1 ready" }).click();
   await confirm(boss);
-  await expect(boss.getByText("1 accepted into the report.")).toBeVisible();
+  await expect(boss.getByText("1 accepted into the report.").first()).toBeVisible();
   await boss.goto(soap);
   await boss.getByLabel("Decision").selectOption("return");
   await boss.getByLabel("Reason").fill("Say how many bars you bought");
   await boss.getByRole("button", { name: "Return expense" }).click();
   await confirm(boss);
-  await expect(boss.getByText("Returned for changes.")).toBeVisible();
+  await expect(boss.getByText("Returned for changes.").first()).toBeVisible();
 
   // Staff correct it; the head accepts.
   await page.goto(soap);
@@ -137,27 +145,43 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await expect(page.getByText("With head of department").first()).toBeVisible();
   await boss.goto(soap);
   await expect(boss.getByRole("button", { name: "Accept expense" })).toBeVisible();
-  await boss.screenshot({ path: "test-results/expense-decide.png", fullPage: true });
+  await boss.screenshot({
+    animations: "disabled",
+    path: "test-results/expense-decide.png",
+    fullPage: true,
+  });
   await boss.getByRole("button", { name: "Accept expense" }).click();
   await confirm(boss);
-  await expect(boss.getByText("Accepted into the report.")).toBeVisible();
+  await expect(boss.getByText("Accepted into the report.").first()).toBeVisible();
 
   // The report has both, warns about the missing receipt and goes to review.
   await boss.goto(`${base}/reports`);
   await expect(boss.getByRole("link", { name: "Open report" }).first()).toBeVisible();
-  await boss.screenshot({ path: "test-results/reports.png", fullPage: true });
+  await boss.screenshot({
+    animations: "disabled",
+    path: "test-results/reports.png",
+    fullPage: true,
+  });
   await boss.getByRole("link", { name: "Open report" }).first().click();
   await expect(boss.getByRole("cell", { name: /Market soap/ })).toBeVisible();
   await expect(boss.getByText("₦24,500.00").first()).toBeVisible();
-  await expect(boss.getByText("1 without a receipt. You can still submit.")).toBeVisible();
-  await boss.screenshot({ path: "test-results/report.png", fullPage: true });
+  await expect(boss.getByText("1 without a receipt. You can still submit.").first()).toBeVisible();
+  await boss.screenshot({
+    animations: "disabled",
+    path: "test-results/report.png",
+    fullPage: true,
+  });
   await boss.getByRole("button", { name: "Submit report" }).click();
   await expect(boss.getByRole("alertdialog")).toContainText("1 without a receipt.");
   await confirm(boss);
-  await expect(boss.getByText("Under review")).toBeVisible();
+  await expect(boss.getByText("Under review").first()).toBeVisible();
   await expect(boss.getByRole("button", { name: "Submit report" })).toHaveCount(0);
   await boss.setViewportSize({ width: 390, height: 844 });
-  await boss.screenshot({ path: "test-results/report-mobile.png", fullPage: true });
+  await boss.screenshot({
+    animations: "disabled",
+    path: "test-results/report-mobile.png",
+    fullPage: true,
+  });
   expect(await fits(boss)).toBe(true);
   const report = boss.url();
 
@@ -168,9 +192,9 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await payer.goto(`${base}/notifications`);
   await payer.getByRole("link", { name: /Halima submitted an expense report/ }).click();
   await expect(payer).toHaveURL(report);
-  await expect(payer.getByText(/RPT-/)).toBeVisible();
+  await expect(payer.getByText(/RPT-/).first()).toBeVisible();
   await page.goto(report);
-  await expect(page.getByText("We couldn't find that page")).toBeVisible();
+  await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
   const { data: file } = await admin
     .from("attachments")
     .select("id")

@@ -31,7 +31,7 @@ export async function enrol(page: Page) {
   await page.getByRole("button", { name: "Set up two-step verification" }).click();
   const secret = (await page.locator("code").textContent())!.trim();
   await page.getByLabel("6-digit code").fill(totp(secret));
-  await page.getByRole("button", { name: "Verify" }).click();
+  // The code sends itself once all six digits are in.
   return secret;
 }
 

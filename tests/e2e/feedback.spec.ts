@@ -18,7 +18,7 @@ test("every outcome is announced", async ({ page }) => {
   await page.getByLabel("Password", { exact: true }).fill("wrong-password-1");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(toast(page, "Email or password is incorrect.")).toBeVisible();
-  await page.screenshot({ path: "test-results/toast-error.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/toast-error.png" });
   await signIn(page, owner);
   await expect(toast(page, "Signed in.")).toBeVisible();
   await expect(page).toHaveURL(new RegExp(`${base}$`));
@@ -59,7 +59,7 @@ test("every outcome is announced", async ({ page }) => {
     .click();
   await expect(toast(page, "Logistics added.")).toBeVisible();
   await expect(panel).toHaveCount(0);
-  await page.screenshot({ path: "test-results/toast-success.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/toast-success.png" });
 
   // An ordinary form, on a phone.
   await page.setViewportSize({ width: 390, height: 844 });
@@ -67,7 +67,7 @@ test("every outcome is announced", async ({ page }) => {
   await page.getByRole("button", { name: "Save changes" }).click();
   await expect(toast(page, "Organisation details saved.")).toBeVisible();
   await page.waitForTimeout(500);
-  await page.screenshot({ path: "test-results/m-toast.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/m-toast.png" });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
 

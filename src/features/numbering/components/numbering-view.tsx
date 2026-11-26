@@ -74,7 +74,7 @@ export function NumberingView({
   return (
     <Card className="overflow-x-auto">
       <table className="w-full text-left text-sm">
-        <thead className="border-line text-muted border-b bg-neutral-50 text-xs">
+        <thead className="border-line text-muted border-b bg-white/40 text-xs">
           <tr>
             {["Document", "Format", "Restarts"].map((h, i) => (
               <th

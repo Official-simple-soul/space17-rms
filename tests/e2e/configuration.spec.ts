@@ -39,15 +39,19 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await signIn(page, owner);
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto(`${base}/configuration`);
-  await expect(page.getByText("Two-step verification is needed")).toBeVisible();
+  await expect(page.getByText("Two-step verification is needed").first()).toBeVisible();
   await page.getByRole("button", { name: "Add starter set" }).click();
-  await expect(page.getByText("Confirm two-step verification to continue")).toBeVisible();
+  await expect(page.getByText("Confirm two-step verification to continue").first()).toBeVisible();
   await page.goto("/account");
   await enrol(page);
-  await expect(page.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(base);
   await expect(page.getByText("1 person can record payments.").first()).toBeVisible();
-  await page.screenshot({ path: "test-results/dashboard.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/dashboard.png",
+    fullPage: true,
+  });
 
   await page.goto(`${base}/configuration`);
   await page.getByRole("button", { name: "Add starter set" }).click();
@@ -55,7 +59,7 @@ test("admin configures categories, templates, workflows and numbering", async ({
     /needs approvers/i,
   );
   await expect(page.getByRole("button", { name: "Add starter set" })).toHaveCount(0);
-  await page.screenshot({ path: "test-results/categories.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/categories.png" });
 
   // Template: create, validate, preview, publish, keep the old version.
   await page.getByRole("link", { name: "Templates", exact: true }).click();
@@ -67,7 +71,7 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByLabel("Label").fill("Transport");
   await page.getByLabel("Options, one per line").fill("Road");
   await page.getByRole("button", { name: "Create template" }).click();
-  await expect(page.getByText("Dropdowns need at least two options.")).toBeVisible();
+  await expect(page.getByText("Dropdowns need at least two options.").first()).toBeVisible();
   await page.getByLabel("Options, one per line").fill("Road\nAir");
   await expect(page.getByLabel("Transport", { exact: true })).toContainText("Air");
   await page.getByRole("button", { name: "Create template" }).click();
@@ -77,11 +81,15 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByLabel("Type").last().selectOption("date");
   await page.getByRole("button", { name: "Move Departure up" }).click();
   await page.getByRole("button", { name: "Publish changes" }).click();
-  await expect(page.getByText("Version 2 published.")).toBeVisible();
-  await page.screenshot({ path: "test-results/template.png", fullPage: true });
+  await expect(page.getByText("Version 2 published.").first()).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/template.png",
+    fullPage: true,
+  });
   // Publishing again from the same page must not look out of date.
   await page.getByRole("button", { name: "Publish changes" }).click();
-  await expect(page.getByText("Template saved.")).toBeVisible();
+  await expect(page.getByText("Template saved.").first()).toBeVisible();
   await page.getByRole("button", { name: "View version 1" }).click();
   await expect(page.getByRole("dialog").getByLabel("Transport")).toBeVisible();
   await expect(page.getByRole("dialog").getByLabel("Departure")).toHaveCount(0);
@@ -92,10 +100,10 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await stale.goto(page.url());
   await page.getByRole("button", { name: "Remove Departure" }).click();
   await page.getByRole("button", { name: "Publish changes" }).click();
-  await expect(page.getByText("Version 3 published.")).toBeVisible();
+  await expect(page.getByText("Version 3 published.").first()).toBeVisible();
   await stale.getByRole("button", { name: "Remove Transport" }).click();
   await stale.getByRole("button", { name: "Publish changes" }).click();
-  await expect(stale.getByText("Someone published a newer version.")).toBeVisible();
+  await expect(stale.getByText("Someone published a newer version.").first()).toBeVisible();
   await stale.close();
 
   // Workflow with a threshold.
@@ -106,16 +114,20 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByLabel("Approved by").last().selectOption("member");
   await page.getByLabel("From amount, NGN").last().fill("five");
   await page.getByRole("button", { name: "Create workflow" }).click();
-  await expect(page.getByText("Enter amounts above zero, such as 50,000.")).toBeVisible();
+  await expect(page.getByText("Enter amounts above zero, such as 50,000.").first()).toBeVisible();
   await page.getByLabel("From amount, NGN").last().fill("250,000");
   await page.getByRole("button", { name: "Create workflow" }).click();
-  await expect(page.getByText("Choose a person for each person step.")).toBeVisible();
+  await expect(page.getByText("Choose a person for each person step.").first()).toBeVisible();
   await page.getByLabel("Person", { exact: true }).selectOption({ label: "Amaka" });
   const result = page.getByRole("list", { name: "Steps for this amount" });
   await expect(result.getByRole("listitem")).toHaveCount(1);
   await page.getByLabel("Sample amount, NGN").fill("250,000");
   await expect(result.getByRole("listitem")).toHaveCount(2);
-  await page.screenshot({ path: "test-results/workflow.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/workflow.png",
+    fullPage: true,
+  });
   await page.getByRole("button", { name: "Create workflow" }).click();
   await expect(page.getByRole("heading", { name: "Large spending" })).toBeVisible();
 
@@ -127,25 +139,29 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await page.getByLabel("Approval workflow").selectOption({ label: "Large spending" });
   await page.getByRole("button", { name: "Add approver" }).click();
   await page.getByRole("button", { name: "Create category" }).click();
-  await expect(page.getByText("Choose a person or role for every approver.")).toBeVisible();
+  await expect(page.getByText("Choose a person or role for every approver.").first()).toBeVisible();
   await page.getByLabel("Approver 1", { exact: true }).selectOption({ label: "Amaka" });
   await page.getByRole("button", { name: "Create category" }).click();
-  await expect(page.getByText("That value is already in use.")).toBeVisible();
+  await expect(page.getByText("That value is already in use.").first()).toBeVisible();
   await page.getByLabel("Code").fill("trip");
   await page.getByRole("button", { name: "Create category" }).click();
   await page.getByRole("link", { name: "Field trips" }).click();
-  await expect(page.getByText("1 person can approve, 2 needed")).toBeVisible();
+  await expect(page.getByText("1 person can approve, 2 needed").first()).toBeVisible();
   await expect(page.getByLabel("Approval workflow")).toHaveValue(/.+/);
-  await page.screenshot({ path: "test-results/category.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/category.png",
+    fullPage: true,
+  });
 
   // In-use template is protected; the category itself can be archived.
   const category = page.url();
   await page.goto(`${base}/configuration/templates`);
   await page.getByRole("link", { name: "Trip request" }).click();
   await page.getByRole("button", { name: "Archive template" }).click();
-  await page.screenshot({ path: "test-results/confirm.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/confirm.png" });
   await confirm(page);
-  await expect(page.getByText("Choose another template in the categories")).toBeVisible();
+  await expect(page.getByText("Choose another template in the categories").first()).toBeVisible();
   await page.goto(category);
   await page.getByRole("button", { name: "Archive category" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Cancel" }).click();
@@ -163,7 +179,7 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await expect(page.getByRole("dialog").getByText("RQ-0001")).toBeVisible();
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("row", { name: /^Requests RQ-0001/ })).toBeVisible();
-  await page.screenshot({ path: "test-results/numbering.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/numbering.png" });
 
   // Audit: server paging, filters and details.
   const extra = await admin.from("audit_logs").insert(
@@ -176,22 +192,22 @@ test("admin configures categories, templates, workflows and numbering", async ({
   );
   expect(extra.error).toBeNull();
   await page.goto(`${base}/audit`);
-  await expect(page.getByText(/1–20 of \d+/)).toBeVisible();
+  await expect(page.getByText(/1–20 of \d+/).first()).toBeVisible();
   await page.getByRole("button", { name: "Next page" }).click();
-  await expect(page.getByText(/21–\d+ of \d+/)).toBeVisible();
+  await expect(page.getByText(/21–\d+ of \d+/).first()).toBeVisible();
   await page.getByLabel("Filter by area").selectOption("numbering");
-  await expect(page.getByText("1–1 of 1")).toBeVisible();
+  await expect(page.getByText("1–1 of 1").first()).toBeVisible();
   await page.getByRole("button", { name: /^View Numbering updated/ }).click();
   await expect(page.getByRole("dialog")).toContainText("REQ");
   await expect(page.getByRole("dialog")).toContainText("RQ");
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await page.getByLabel("Filter by to date").fill("2020-01-01");
-  await expect(page.getByText("No matches")).toBeVisible();
+  await expect(page.getByText("No matches").first()).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
-  await expect(page.getByText(/1–20 of \d+/)).toBeVisible();
+  await expect(page.getByText(/1–20 of \d+/).first()).toBeVisible();
   await page.getByRole("searchbox").fill("field trips");
-  await expect(page.getByText("1–1 of 1")).toBeVisible();
-  await page.screenshot({ path: "test-results/audit.png" });
+  await expect(page.getByText("1–1 of 1").first()).toBeVisible();
+  await page.screenshot({ animations: "disabled", path: "test-results/audit.png" });
 
   // Other roles cannot open configuration.
   const approver = await (await browser.newContext()).newPage();
@@ -200,18 +216,22 @@ test("admin configures categories, templates, workflows and numbering", async ({
   await expect(approver.getByText("need attention")).toHaveCount(0);
   for (const path of ["categories", "templates/new", "numbering"]) {
     await approver.goto(`${base}/configuration/${path}`);
-    await expect(approver.getByText("We couldn't find that page")).toBeVisible();
+    await expect(approver.getByText("We couldn't find that page").first()).toBeVisible();
   }
 
   // Mobile: More menu and no sideways scrolling.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base);
   await expect(page.getByRole("heading", { name: "Hello, Ada" })).toBeVisible();
-  await page.screenshot({ path: "test-results/mobile-dashboard.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/mobile-dashboard.png",
+    fullPage: true,
+  });
   const bar = page.getByRole("navigation", { name: "Mobile" });
   await bar.getByRole("button", { name: "More" }).click();
   await expect(page.getByRole("dialog", { name: "More" })).toBeVisible();
-  await page.screenshot({ path: "test-results/mobile-more.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/mobile-more.png" });
   await page.getByRole("dialog").getByRole("link", { name: "Configuration" }).click();
   await expect(page.getByRole("heading", { name: "Configuration" })).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -229,6 +249,9 @@ test("admin configures categories, templates, workflows and numbering", async ({
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       path,
     ).toBe(true);
-    await page.screenshot({ path: `test-results/m-${path.replaceAll("/", "-")}.png` });
+    await page.screenshot({
+      animations: "disabled",
+      path: `test-results/m-${path.replaceAll("/", "-")}.png`,
+    });
   }
 });

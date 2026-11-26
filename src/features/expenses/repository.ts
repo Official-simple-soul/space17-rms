@@ -2,7 +2,7 @@ import "server-only";
 import { isDate, parseSort } from "@/lib/data-view";
 import { isId, loadPage, text, type Query } from "@/lib/server-page";
 import { createClient } from "@/lib/supabase/server";
-import { evidence, expenseDetail, expenseFlags, expenseStatus, funding } from "./schema";
+import { EVIDENCE, evidence, expenseDetail, expenseFlags, expenseStatus, funding } from "./schema";
 
 export type ExpenseView = "mine" | "inbox" | "all";
 
@@ -47,6 +47,7 @@ export async function listExpenses(orgId: string, view: ExpenseView, query: Quer
       funding: funding.parse(r.funding),
       status: expenseStatus.parse(r.status),
       flags: expenseFlags.parse(r.flags),
+      evidence: evidence.parse(r.evidence) satisfies keyof typeof EVIDENCE,
     })),
   };
 }

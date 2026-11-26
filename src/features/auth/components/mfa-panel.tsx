@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useState, useTransition } from "react";
 import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
-import { TextField } from "@/components/ui/field";
+import { CodeField } from "@/components/ui/code-field";
 import { Notice } from "@/components/ui/surface";
 import { startEnrolment, verifyCode } from "../actions";
 
@@ -15,14 +15,11 @@ export function CodeForm({ factorId, next }: { factorId: string; next?: string }
         <>
           <input type="hidden" name="factorId" value={factorId} />
           <input type="hidden" name="next" value={next ?? ""} />
-          <TextField
+          <CodeField
             label="6-digit code"
             name="code"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            className="text-center text-lg tracking-[0.4em]"
             errors={state.fieldErrors?.code}
+            rejection={!state.ok && (state.message || state.fieldErrors) ? state : undefined}
           />
         </>
       )}

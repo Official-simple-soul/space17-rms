@@ -1,8 +1,9 @@
 import { useId, type ComponentProps } from "react";
 import { cn } from "@/lib/utils";
+import { PasswordInput } from "./password-input";
 
 const control =
-  "w-full rounded-control border border-line bg-surface px-3.5 text-base outline-none transition placeholder:text-neutral-400 focus:border-ink focus:ring-3 focus:ring-ink/10 aria-invalid:border-brand sm:text-sm";
+  "w-full rounded-control border border-ink/10 bg-white/70 px-3.5 text-base shadow-[inset_0_1px_2px_rgb(10_10_10/0.04)] outline-none transition duration-200 placeholder:text-neutral-400 hover:border-ink/20 focus:border-brand/50 focus:bg-white focus:ring-4 focus:ring-brand/10 aria-invalid:border-brand sm:text-sm";
 
 type Base = { label: string; name: string; hint?: string; errors?: string[] };
 type FieldProps<T extends "input" | "textarea" | "select"> = Base &
@@ -48,7 +49,15 @@ export function TextField({ label, name, hint, errors, className, ...props }: Fi
   const id = useId();
   return (
     <Wrapper id={id} {...base}>
-      <input className={cn(control, "h-11", className)} {...controlProps(id, base)} {...props} />
+      {props.type === "password" ? (
+        <PasswordInput
+          className={cn(control, "h-11", className)}
+          {...controlProps(id, base)}
+          {...props}
+        />
+      ) : (
+        <input className={cn(control, "h-11", className)} {...controlProps(id, base)} {...props} />
+      )}
     </Wrapper>
   );
 }

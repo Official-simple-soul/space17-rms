@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Backdrop } from "@/components/layout/backdrop";
+import { Spotlight } from "@/components/ui/spotlight";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -14,8 +16,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="min-h-dvh antialiased">
+      <body className="relative isolate min-h-dvh antialiased">
+        <Backdrop />
         {children}
+        <Spotlight />
         <Toaster />
       </body>
     </html>

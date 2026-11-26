@@ -157,13 +157,15 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
           )
         }
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tasks.map(({ label, value, icon: Icon, href }) => (
-          <Link key={label} href={href} className="block">
-            <Card className="hover:border-ink p-5 transition">
+          <Link key={label} href={href} className="group rounded-card block">
+            <Card className="lift p-5">
               <div className="text-muted flex items-center justify-between text-sm">
                 {label}
-                <Icon className="size-4" aria-hidden />
+                <span className="bg-brand-soft text-brand grid size-8 place-items-center rounded-xl transition-transform duration-300 ease-(--ease-spring) group-hover:scale-110 group-hover:-rotate-6">
+                  <Icon className="size-4" aria-hidden />
+                </span>
               </div>
               <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
             </Card>
@@ -173,7 +175,9 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
           <Card key={label} className="p-5">
             <div className="text-muted flex items-center justify-between text-sm">
               {label}
-              <Icon className="size-4" aria-hidden />
+              <span className="bg-ink/[0.05] grid size-8 place-items-center rounded-xl">
+                <Icon className="size-4" aria-hidden />
+              </span>
             </div>
             <p className="mt-5 text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
           </Card>

@@ -133,15 +133,15 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await page.getByLabel("Account name").fill("Tunde Ade");
   await page.getByLabel("Account number").fill("12345");
   await page.getByRole("button", { name: "Save details" }).click();
-  await expect(page.getByText("Enter the account number.")).toBeVisible();
+  await expect(page.getByText("Enter the account number.").first()).toBeVisible();
   await page.getByLabel("Account number").fill("123456789");
   await page.getByRole("button", { name: "Save details" }).click();
-  await expect(page.getByText("Nigerian accounts have 10 digits.")).toBeVisible();
+  await expect(page.getByText("Nigerian accounts have 10 digits.").first()).toBeVisible();
   await page.getByLabel("Account number").fill("0123456789");
   await page.getByRole("button", { name: "Save details" }).click();
-  await expect(page.getByText("•••• 6789")).toBeVisible();
+  await expect(page.getByText("•••• 6789").first()).toBeVisible();
   await expect(page.getByLabel("Account number")).toHaveValue("");
-  await page.screenshot({ path: "test-results/bank.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/bank.png" });
   await findEmail(request, staffUser.email, "Your bank details were changed");
 
   // Finance: MFA first, then reveal and part pay.
@@ -149,15 +149,15 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await signIn(payer, finance.email);
   await expect(payer).toHaveURL(new RegExp(`${base}$`));
   await payer.goto(`${base}/payments`);
-  await expect(payer.getByText("Two-step verification is needed")).toBeVisible();
+  await expect(payer.getByText("Two-step verification is needed").first()).toBeVisible();
   await payer.getByRole("link", { name: /Printer paper/ }).click();
   await payer.getByRole("button", { name: "Reveal number" }).click();
-  await expect(payer.getByText("Confirm two-step verification to continue")).toBeVisible();
+  await expect(payer.getByText("Confirm two-step verification to continue").first()).toBeVisible();
   await payer.goto("/account");
   await enrol(payer);
-  await expect(payer.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(payer.getByText("Two-step verification is on.").first()).toBeVisible();
   await payer.goto(`${base}/payments`);
-  await payer.screenshot({ path: "test-results/payments-due.png" });
+  await payer.screenshot({ animations: "disabled", path: "test-results/payments-due.png" });
   await payer.getByRole("link", { name: /Printer paper/ }).click();
   await expect(payer.getByTestId("account-number")).toHaveText("•••• 6789");
   await payer.getByRole("button", { name: "Reveal number" }).click();
@@ -165,14 +165,14 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await payer.getByRole("button", { name: "Record payment" }).click();
   const panel = payer.getByRole("dialog");
   await panel.getByLabel("Amount, NGN").fill("60,000");
-  await expect(panel.getByText("Can't be more than ₦50,000.00.")).toBeVisible();
+  await expect(panel.getByText("Can't be more than ₦50,000.00.").first()).toBeVisible();
   await panel.getByLabel("Amount, NGN").fill("20,000");
   await panel.getByLabel("Reference").fill("TRF-1");
-  await payer.screenshot({ path: "test-results/payment-form.png" });
+  await payer.screenshot({ animations: "disabled", path: "test-results/payment-form.png" });
   await panel.getByRole("button", { name: "Record payment" }).click();
   await expect(payer.getByRole("alertdialog")).toContainText("₦20,000.00");
   await confirm(payer);
-  await expect(payer.getByText("Part paid", { exact: true })).toBeVisible();
+  await expect(payer.getByText("Part paid", { exact: true }).first()).toBeVisible();
   await expect(payer.getByText(/PAY-\d{4}-0001/).first()).toBeVisible();
   await payer.locator('input[type="file"]:not([capture])').setInputFiles({
     name: "transfer.pdf",
@@ -186,34 +186,42 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await confirm(payer);
   await expect(payer.getByText("Paid", { exact: true }).first()).toBeVisible();
   await expect(payer.getByRole("button", { name: "Reveal number" })).toHaveCount(0);
-  await payer.screenshot({ path: "test-results/payment-done.png", fullPage: true });
+  await payer.screenshot({
+    animations: "disabled",
+    path: "test-results/payment-done.png",
+    fullPage: true,
+  });
   await findEmail(request, staffUser.email, "A payment was recorded");
 
   // Staff confirm both; proof is visible to them.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`${base}/requests/${requestId}`);
   await expect(page.getByRole("link", { name: /transfer.pdf/ })).toBeVisible();
-  await page.screenshot({ path: "test-results/m-payment.png", fullPage: true });
+  await page.screenshot({
+    animations: "disabled",
+    path: "test-results/m-payment.png",
+    fullPage: true,
+  });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.getByRole("button", { name: "I received this" }).first().click();
   await confirm(page);
   await expect(page.getByRole("button", { name: "I received this" })).toHaveCount(1);
   await page.getByRole("button", { name: "I received this" }).click();
   await confirm(page);
-  await expect(page.getByText("Received", { exact: true })).toBeVisible();
+  await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
 
   // Void, then history.
   await payer.reload();
   await payer.getByRole("button", { name: /^Void PAY-\d{4}-0002/ }).click();
   await payer.getByLabel("Reason", { exact: true }).fill("Transfer bounced");
   await payer.getByRole("button", { name: "Void payment" }).click();
-  await expect(payer.getByText("Voided: Transfer bounced")).toBeVisible();
-  await expect(payer.getByText("Part paid", { exact: true })).toBeVisible();
+  await expect(payer.getByText("Voided: Transfer bounced").first()).toBeVisible();
+  await expect(payer.getByText("Part paid", { exact: true }).first()).toBeVisible();
   await payer.goto(`${base}/payments?tab=history`);
-  await expect(payer.getByText("1–2 of 2")).toBeVisible();
+  await expect(payer.getByText("1–2 of 2").first()).toBeVisible();
   await payer.getByLabel("Filter by status").selectOption("voided");
-  await expect(payer.getByText("1–1 of 1")).toBeVisible();
-  await payer.screenshot({ path: "test-results/payments-history.png" });
+  await expect(payer.getByText("1–1 of 1").first()).toBeVisible();
+  await payer.screenshot({ animations: "disabled", path: "test-results/payments-history.png" });
   await payer.setViewportSize({ width: 390, height: 844 });
   for (const path of ["payments", "payments?tab=history", "bank-details"]) {
     await payer.goto(`${base}/${path}`);
@@ -226,7 +234,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
 
   // Others cannot open payments.
   await page.goto(`${base}/payments`);
-  await expect(page.getByText("We couldn't find that page")).toBeVisible();
+  await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
   // Email addresses in the queue were each used once.
   const left = await admin.from("email_outbox").select("status").eq("status", "failed");
   expect(left.data).toEqual([]);
@@ -243,7 +251,7 @@ test("staff join with a code after their email is confirmed and an admin approve
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto("/account");
   await enrol(page);
-  await expect(page.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(`${base}/members?tab=requests`);
   await page.getByRole("button", { name: "Turn on" }).click();
   const code = (await page.locator("main code").textContent())!;
@@ -260,29 +268,29 @@ test("staff join with a code after their email is confirmed and an admin approve
   await expect(guest.getByText("That code isn't valid.").first()).toBeVisible();
   await guest.getByLabel("Join code").fill(code.toLowerCase());
   await guest.getByRole("button", { name: "Ask to join" }).click();
-  await expect(guest.getByText("Check your email to confirm")).toBeVisible();
+  await expect(guest.getByText("Check your email to confirm").first()).toBeVisible();
   await expect(guest.getByRole("button", { name: "Ask to join" })).toHaveCount(0);
-  await guest.screenshot({ path: "test-results/join.png" });
+  await guest.screenshot({ animations: "disabled", path: "test-results/join.png" });
   // A known address gets the same answer.
   await guest.goto("/join");
   await guest.getByLabel("Join code").fill(code);
   await guest.getByLabel("Full name").fill("Ada Owner");
   await guest.getByLabel("Work email").fill(owner);
   await guest.getByRole("button", { name: "Ask to join" }).click();
-  await expect(guest.getByText("Check your email to confirm")).toBeVisible();
+  await expect(guest.getByText("Check your email to confirm").first()).toBeVisible();
 
   const check = await findEmail(request, email, "Confirm your request");
   await guest.goto(check.match(/http\S+\/join\/verify\/[a-f0-9]{64}/)![0]);
   await guest.getByRole("button", { name: "Confirm my email" }).click();
-  await expect(guest.getByText("will review your request")).toBeVisible();
+  await expect(guest.getByText("will review your request").first()).toBeVisible();
   await findEmail(request, owner, "Ngozi Eze asked to join");
 
   await page.reload();
   await page.getByRole("button", { name: "Approve Ngozi Eze" }).click();
   await page.getByLabel("Role", { exact: true }).selectOption({ label: "Staff" });
-  await page.screenshot({ path: "test-results/join-requests.png" });
+  await page.screenshot({ animations: "disabled", path: "test-results/join-requests.png" });
   await page.getByRole("dialog").getByRole("button", { name: "Approve" }).click();
-  await expect(page.getByText(`We emailed ${email}`)).toBeVisible();
+  await expect(page.getByText(`We emailed ${email}`).first()).toBeVisible();
   const invite = await findEmail(request, email, "Join Acme");
   await guest.goto(invite.match(/http\S+\/join\/[a-f0-9]{64}/)![0]);
   await guest.getByLabel("Full name").fill("Ngozi Eze");

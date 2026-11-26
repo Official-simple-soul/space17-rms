@@ -41,7 +41,7 @@ export function RequestDetails({
         <Card className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <caption className="sr-only">Items</caption>
-            <thead className="border-line text-muted border-b bg-neutral-50 text-xs">
+            <thead className="border-line text-muted border-b bg-white/40 text-xs">
               <tr>
                 <th scope="col" className="px-3 py-3 font-medium sm:px-5">
                   Item

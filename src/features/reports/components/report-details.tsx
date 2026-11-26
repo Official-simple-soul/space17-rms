@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Badge, Card } from "@/components/ui/surface";
-import { ExpenseFlags } from "@/features/expenses/components/expense-badges";
+import { Card } from "@/components/ui/surface";
+import { ExpenseFlags, ReceiptStatus } from "@/features/expenses/components/expense-badges";
 import { FUNDING } from "@/features/expenses/schema";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import type { ReportDetail } from "../schema";
@@ -54,7 +54,7 @@ export function ReportLines({ report: r, base }: { report: ReportDetail; base: s
             <th className="px-5 py-3 font-medium">Expense</th>
             <th className="hidden px-5 font-medium md:table-cell">Date</th>
             <th className="hidden px-5 font-medium 2xl:table-cell">Paid with</th>
-            <th className="hidden px-5 font-medium md:table-cell">Receipt</th>
+            <th className="px-3 font-medium sm:px-5">Receipt</th>
             <th className="px-5 text-right font-medium">Amount</th>
           </tr>
         </thead>
@@ -70,18 +70,11 @@ export function ReportLines({ report: r, base }: { report: ReportDetail; base: s
                   </span>
                 </Link>
                 <ExpenseFlags flags={l.flags.filter((f) => f !== "missing_receipt")} />
-                {l.evidence === "missing" && (
-                  <span className="md:hidden">
-                    <Badge tone="alert">No receipt</Badge>
-                  </span>
-                )}
               </td>
               <td className="hidden px-5 whitespace-nowrap md:table-cell">{formatDate(l.date)}</td>
               <td className="hidden px-5 2xl:table-cell">{FUNDING[l.funding]}</td>
-              <td className="hidden px-5 md:table-cell">
-                <Badge tone={l.evidence === "missing" ? "alert" : "neutral"}>
-                  {l.evidence === "missing" ? "No receipt" : "Receipt"}
-                </Badge>
+              <td className="px-3 sm:px-5">
+                <ReceiptStatus evidence={l.evidence} compact />
               </td>
               <td className="px-5 text-right whitespace-nowrap tabular-nums">
                 {formatMoney(l.total_minor, r.currency)}

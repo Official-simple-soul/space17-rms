@@ -6,7 +6,7 @@ import { DataView, type Column, type ServerPaging } from "@/components/ui/data-v
 import type { ListView } from "@/config/constants";
 import { formatDate, formatMoney } from "@/lib/format";
 import { EVIDENCE, FUNDING, STATUSES, type ExpenseFlag, type ExpenseStatus } from "../schema";
-import { ExpenseFlags, ExpenseStatusBadge } from "./expense-badges";
+import { ExpenseFlags, ExpenseStatusBadge, ReceiptStatus } from "./expense-badges";
 
 export type ExpenseRow = {
   id: string;
@@ -20,6 +20,7 @@ export type ExpenseRow = {
   funding: keyof typeof FUNDING;
   status: ExpenseStatus;
   flags: ExpenseFlag[];
+  evidence: keyof typeof EVIDENCE;
 };
 type Option = { id: string; name: string };
 
@@ -43,8 +44,14 @@ export function ExpensesView({
   departments: Option[];
 }) {
   // A draft's gaps are still being filled in, so only submitted expenses show flags.
+  // The receipt has its own column, so it isn't repeated here.
   const flags = (r: ExpenseRow) =>
-    r.status === "draft" || r.status === "cancelled" ? null : <ExpenseFlags flags={r.flags} />;
+    r.status === "draft" || r.status === "cancelled" ? null : (
+      <ExpenseFlags flags={r.flags.filter((f) => f !== "missing_receipt")} />
+    );
+  const receipt = (r: ExpenseRow, compact = false) => (
+    <ReceiptStatus evidence={r.evidence} draft={r.status === "draft"} compact={compact} />
+  );
   const link = (r: ExpenseRow) => (
     <Link
       href={r.status === "draft" ? `${base}/${r.id}/edit` : `${base}/${r.id}`}
@@ -108,6 +115,7 @@ export function ExpensesView({
       sort: (r) => r.date,
       cell: (r) => <span className="whitespace-nowrap">{date(r)}</span>,
     },
+    { key: "receipt", header: "Receipt", cell: (r) => receipt(r, true) },
     { key: "amount", header: "Amount", align: "right", sort: (r) => r.amount, cell: amount },
     ...(mode === "inbox"
       ? []
@@ -162,7 +170,10 @@ export function ExpensesView({
           <p className="text-muted mb-2 text-sm">
             {[mode !== "mine" && r.by, r.category, date(r)].filter(Boolean).join(" · ")}
           </p>
-          {flags(r)}
+          <div className="flex flex-wrap gap-1.5">
+            {receipt(r)}
+            {flags(r)}
+          </div>
         </>
       )}
       empty={

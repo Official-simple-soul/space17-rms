@@ -23,7 +23,7 @@ test("people only reach what their role allows, and photos work from a phone", a
   await expect(page).toHaveURL(new RegExp(`${base}$`));
   await page.goto("/account");
   await enrol(page);
-  await expect(page.getByText("Two-step verification is on.")).toBeVisible();
+  await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(`${base}/configuration`);
   await page.getByRole("button", { name: "Add starter set" }).click();
   await expect(page.getByRole("row", { name: /Office supplies/ })).toBeVisible();
@@ -78,7 +78,7 @@ test("people only reach what their role allows, and photos work from a phone", a
   await phone.setViewportSize({ width: 1280, height: 800 });
   const menu = phone.getByRole("navigation").first();
   await expect(menu.getByRole("listitem")).toHaveText(["Dashboard", "Requests", "Notifications"]);
-  await phone.screenshot({ path: "test-results/limited-menu.png" });
+  await phone.screenshot({ animations: "disabled", path: "test-results/limited-menu.png" });
   await phone.setViewportSize({ width: 390, height: 844 });
 
   await phone.goto(`${base}/requests/new`);
@@ -97,5 +97,9 @@ test("people only reach what their role allows, and photos work from a phone", a
   await phone.reload();
   await expect(phone.getByRole("button", { name: "Remove image.png" })).toBeVisible();
   await expect.poll(shown).toBe(true);
-  await phone.screenshot({ path: "test-results/m-photo.png", fullPage: true });
+  await phone.screenshot({
+    animations: "disabled",
+    path: "test-results/m-photo.png",
+    fullPage: true,
+  });
 });

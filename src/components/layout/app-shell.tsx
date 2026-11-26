@@ -21,7 +21,7 @@ export function AppShell({ items, name, email, switcher, children }: Props) {
       >
         Skip to content
       </a>
-      <aside className="bg-ink sticky top-0 hidden h-dvh flex-col p-4 text-white lg:flex">
+      <aside className="glass-dark sticky top-0 hidden h-dvh flex-col p-4 text-white lg:flex">
         <Link href="/" className="mb-6 px-2 py-2">
           <Logo inverse />
         </Link>
@@ -30,7 +30,10 @@ export function AppShell({ items, name, email, switcher, children }: Props) {
           <NavLinks items={items} />
         </nav>
         <div className="flex items-center gap-2 border-t border-white/10 pt-4">
-          <Link href="/account" className="rounded-control min-w-0 flex-1 p-2 hover:bg-white/10">
+          <Link
+            href="/account"
+            className="rounded-control min-w-0 flex-1 p-2 transition-colors hover:bg-white/10"
+          >
             <span className="block truncate text-sm font-medium">{name}</span>
             <span className="block truncate text-xs text-neutral-400">{email}</span>
           </Link>
@@ -38,7 +41,7 @@ export function AppShell({ items, name, email, switcher, children }: Props) {
         </div>
       </aside>
       <div className="min-w-0">
-        <header className="border-line bg-surface sticky top-0 z-20 flex items-center justify-between border-b px-4 py-3 lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-white/60 bg-white/65 px-4 py-3 backdrop-blur-xl backdrop-saturate-150 lg:hidden">
           <Link href="/">
             <Logo />
           </Link>
@@ -49,14 +52,14 @@ export function AppShell({ items, name, email, switcher, children }: Props) {
             <SignOutButton compact />
           </div>
         </header>
-        {switcher && <div className="bg-ink px-4 py-2 lg:hidden">{switcher}</div>}
+        {switcher && <div className="glass-dark px-4 py-2 lg:hidden">{switcher}</div>}
         <main id="content" className="mx-auto max-w-6xl px-4 py-8 pb-28 sm:px-8 lg:py-12">
           {children}
         </main>
       </div>
       <nav
         aria-label="Mobile"
-        className="border-line bg-surface fixed inset-x-0 bottom-0 z-20 border-t px-2 pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-white/60 bg-white/70 px-2 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_30px_-12px_rgb(60_10_15/0.15)] backdrop-blur-xl backdrop-saturate-150 lg:hidden"
       >
         <MobileNav items={items} />
       </nav>

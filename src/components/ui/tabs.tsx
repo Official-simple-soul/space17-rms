@@ -20,7 +20,7 @@ export function LinkTabs({
           href={t.href ?? (i === 0 ? base! : `${base}?tab=${t.id}`)}
           aria-current={t.id === current ? "page" : undefined}
           className={cn(
-            "-mb-px flex shrink-0 items-center gap-2 border-b-2 pb-3 text-sm font-medium",
+            "-mb-px flex shrink-0 items-center gap-2 border-b-2 pb-3 text-sm font-medium transition-colors",
             t.id === current
               ? "border-brand text-ink"
               : "text-muted hover:text-ink border-transparent",
@@ -28,7 +28,7 @@ export function LinkTabs({
         >
           {t.label}
           {t.count !== undefined && (
-            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700">
+            <span className="bg-ink/[0.06] rounded-full px-2 py-0.5 text-xs text-neutral-700">
               {t.count}
             </span>
           )}
