@@ -30,21 +30,20 @@ insert into t select system_key, id::text from roles where org_id = pg_temp.v('o
 insert into departments (org_id, name, code) values (pg_temp.v('org-a'), 'Field', 'FLD');
 insert into t select code, id::text from departments where org_id = pg_temp.v('org-a');
 insert into membership_roles (org_id, membership_id, role_id)
-  select pg_temp.v('org-a'), pg_temp.v(m), pg_temp.v(r) from (values ('m1', 'admin'), ('m2', 'approver'), ('m3', 'finance'), ('m4', 'staff'), ('m6', 'finance')) x (m, r);
+  select pg_temp.v('org-a'), pg_temp.v(m), pg_temp.v(r) from (values ('m1', 'admin'), ('m3', 'finance'), ('m4', 'staff'), ('m6', 'finance')) x (m, r);
+insert into membership_roles (org_id, membership_id, role_id, department_id)
+  values (pg_temp.v('org-a'), pg_temp.v('m2'), pg_temp.v('approver'), pg_temp.v('FLD'));
 insert into membership_roles (org_id, membership_id, role_id)
   select pg_temp.v('org-b'), pg_temp.v('m5'), id from roles where org_id = pg_temp.v('org-b') and system_key = 'finance';
 insert into department_members (org_id, department_id, membership_id)
   select pg_temp.v('org-a'), pg_temp.v('FLD'), pg_temp.v(m) from unnest(array['m3', 'm4']) m;
-insert into categories (org_id, name, code, requires_accounting) values
-  (pg_temp.v('org-a'), 'Supplies', 'SUP', true), (pg_temp.v('org-a'), 'Gifts', 'GFT', false);
-insert into t select code, id::text from categories where org_id = pg_temp.v('org-a');
-insert into category_approvers (org_id, category_id, role_id)
-  select pg_temp.v('org-a'), pg_temp.v(c), pg_temp.v('approver') from unnest(array['SUP', 'GFT']) c;
+insert into categories (org_id, name) values (pg_temp.v('org-a'), 'Supplies'), (pg_temp.v('org-a'), 'Gifts');
+insert into t select upper(left(name, 3)), id::text from categories where org_id = pg_temp.v('org-a');
 
 create function pg_temp.make(p_key text, p_user int, p_cat text) returns void language plpgsql as $$
 begin
   perform pg_temp.login(p_user);
-  insert into t select p_key, save_request(pg_temp.v('org-a'), null, pg_temp.v(p_cat), pg_temp.v('FLD'), 'Request', 'For the office', null, '{}',
+  insert into t select p_key, save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), pg_temp.v(p_cat), 'Request', 'For the office', null, '',
     '[{"description":"Item","quantity":1,"unit_price_minor":100000}]', null) ->> 'id';
   perform submit_request(pg_temp.v(p_key), 1);
   perform pg_temp.login(2);
@@ -141,13 +140,11 @@ select throws_ok($$ select pg_temp.pay('own', 100) $$, '42501', 'own_payment', '
 select throws_ok($$ select reveal_bank_account(pg_temp.v('own')) $$, '42501', 'own_payment', 'or reveals through it');
 select ok((select is_own from list_payable(pg_temp.v('org-a')) where id = pg_temp.v('own')), 'the queue marks it');
 select is((select to_pay from my_work(pg_temp.v('org-a'))), 1::bigint, 'and does not count it');
-select pg_temp.make('g', 4, 'GFT');
+select pg_temp.make('g', 4, 'GIF');
 select pg_temp.login(6);
 insert into t select 'p3', pg_temp.pay('g', 100000)::text;
 select pg_temp.login(4); select confirm_payment(pg_temp.v('p3'));
-select is(pg_temp.st('g'), 'closed', 'without accounting it closes');
-select pg_temp.login(6);
-select throws_ok($$ select void_payment(pg_temp.v('p3'), pg_temp.lock('g'), 'Too late') $$, '22023', 'void_closed', 'a closed request keeps its payments');
+select is(pg_temp.st('g'), 'received', 'money given is always accounted for with expenses');
 
 -- Proof
 select throws_ok($$ select start_payment_proof(pg_temp.v('p1'), 'x.pdf', 'application/pdf', 5) $$, 'P0002', 'not_found', 'only the recorder adds proof');

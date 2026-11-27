@@ -1,111 +1,63 @@
 "use client";
 
 import { Tags } from "lucide-react";
-import Link from "next/link";
 import { DataView } from "@/components/ui/data-view";
-import { Badge } from "@/components/ui/surface";
+import { FormDialog } from "@/components/ui/form-dialog";
 import type { ListView } from "@/config/constants";
-import { APPLIES_TO, type AppliesTo } from "../schema";
+import { ArchiveCategory, CategoryForm } from "./category-forms";
 
-export type CategoryRow = {
-  id: string;
-  name: string;
-  code: string;
-  appliesTo: AppliesTo;
-  departments: string;
-  departmentIds: string[];
-  workflow: string;
-  warning: boolean;
-};
+type Row = { id: string; name: string };
 
 export function CategoriesView({
   rows,
   view,
-  base,
-  departments,
+  orgId,
 }: {
-  rows: CategoryRow[];
+  rows: Row[];
   view: ListView;
-  base: string;
-  departments: { id: string; name: string }[];
+  orgId: string;
 }) {
-  const link = (r: CategoryRow) => (
-    <Link href={`${base}/${r.id}`} className="font-medium hover:underline">
-      {r.name}
-    </Link>
+  const edit = (r: Row) => (
+    <FormDialog
+      label="Edit"
+      ariaLabel={`Edit ${r.name}`}
+      title={`Edit ${r.name}`}
+      variant="outline"
+      size="sm"
+    >
+      <CategoryForm orgId={orgId} category={r} />
+      <div className="border-line mt-8 border-t pt-5">
+        <h3 className="text-sm font-semibold">Archive category</h3>
+        <ArchiveCategory orgId={orgId} id={r.id} />
+      </div>
+    </FormDialog>
   );
-  const status = (r: CategoryRow) =>
-    r.warning ? <Badge tone="alert">Needs approvers</Badge> : <Badge>Ready</Badge>;
   return (
     <DataView
       label="Categories"
       rows={rows}
       rowKey={(r) => r.id}
       initialView={view}
-      searchText={(r) => [r.name, r.code, r.departments, r.workflow].join(" ")}
-      filters={[
-        {
-          key: "use",
-          label: "Used for",
-          options: Object.entries(APPLIES_TO).map(([value, label]) => ({ value, label })),
-          match: (r, v) => r.appliesTo === v,
-        },
-        {
-          key: "department",
-          label: "Department",
-          options: departments.map((d) => ({ value: d.id, label: d.name })),
-          match: (r, v) => !r.departmentIds.length || r.departmentIds.includes(v),
-        },
-      ]}
+      searchText={(r) => r.name}
       columns={[
-        { key: "name", header: "Name", sort: (r) => r.name, cell: link },
         {
-          key: "code",
-          header: "Code",
-          hideOnMobile: true,
-          sort: (r) => r.code,
-          cell: (r) => r.code,
+          key: "name",
+          header: "Name",
+          sort: (r) => r.name,
+          cell: (r) => <span className="font-medium">{r.name}</span>,
         },
-        {
-          key: "use",
-          header: "Used for",
-          hideOnMobile: true,
-          sort: (r) => APPLIES_TO[r.appliesTo],
-          cell: (r) => APPLIES_TO[r.appliesTo],
-        },
-        {
-          key: "departments",
-          header: "Departments",
-          hideOnMobile: true,
-          sort: (r) => r.departments,
-          cell: (r) => r.departments,
-        },
-        {
-          key: "workflow",
-          header: "Approval",
-          hideOnMobile: true,
-          sort: (r) => r.workflow,
-          cell: (r) => r.workflow,
-        },
-        { key: "status", header: "Status", sort: (r) => Number(r.warning), cell: status },
+        { key: "actions", header: "", align: "right", cell: edit },
       ]}
       card={(r) => (
-        <>
-          <div className="flex items-start justify-between gap-2">
-            <div>
-              {link(r)}
-              <p className="text-muted text-xs">{r.code}</p>
-            </div>
-            {status(r)}
-          </div>
-          <p className="mt-4 text-sm">{APPLIES_TO[r.appliesTo]}</p>
-          <p className="text-muted text-sm">{[r.departments, r.workflow].join(" · ")}</p>
-        </>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-medium">{r.name}</span>
+          {edit(r)}
+        </div>
       )}
       empty={{
         icon: Tags,
         title: "No categories yet",
-        description: "Categories decide who can approve a request and what it asks for.",
+        description: "Categories are optional labels that group spending in reports.",
       }}
     />
   );

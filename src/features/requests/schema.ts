@@ -1,19 +1,18 @@
 import { z } from "zod";
 import { attachment } from "@/features/files/schema";
 import { paymentMethod } from "@/features/payments/schema";
-import { templateFields } from "@/features/templates/schema";
 
 export const STATUSES = {
   draft: "Draft",
-  pending: "Awaiting approval",
+  pending: "Waiting for approval",
   returned: "Returned",
   rejected: "Rejected",
   approved: "Approved",
-  part_paid: "Part paid",
-  paid: "Paid",
-  received: "Received",
+  part_paid: "Some money given",
+  paid: "Money given",
+  received: "Money received",
   accounted: "Accounted for",
-  closed: "Closed",
+  closed: "Done",
   cancelled: "Withdrawn",
 } as const;
 export type RequestStatus = keyof typeof STATUSES;
@@ -35,11 +34,10 @@ export const requestDetail = z.object({
   created_at: z.string(),
   lock_version: z.number(),
   currency: z.string(),
-  category: named,
+  category: named.nullable(),
   department: named.nullable(),
   requester: z.string(),
-  fields: templateFields,
-  form_data: z.record(z.string(), z.unknown()),
+  supplier: z.string(),
   items: z.array(
     z.object({
       id: z.uuid(),
@@ -122,16 +120,22 @@ export const requestDetail = z.object({
 });
 export type RequestDetail = z.infer<typeof requestDetail>;
 
+export const requestOptions = z.object({
+  departments: z.array(named.extend({ approvers: z.array(z.string()) })),
+  categories: z.array(named),
+});
+export type RequestOptions = z.infer<typeof requestOptions>;
+
 export const draftSchema = z.object({
   orgId: z.uuid(),
   id: z.uuid().nullable(),
   lock: z.number().int().nullable(),
-  categoryId: z.uuid(),
   departmentId: z.uuid().nullable(),
+  categoryId: z.uuid().nullable(),
   title: z.string().max(120),
   purpose: z.string().max(2000),
   neededBy: z.iso.date().nullable(),
-  form: z.record(z.string(), z.union([z.string().max(5000), z.number(), z.boolean()])),
+  supplier: z.string().max(120),
   items: z
     .array(
       z.object({

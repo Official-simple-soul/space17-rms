@@ -61,7 +61,7 @@ export default async function RequestsPage({
         base={base}
         currency={details.currency}
         now={new Date().toISOString()}
-        categories={categories.filter((c) => c.appliesTo !== "expense")}
+        categories={categories}
         departments={departments}
       />
     </>

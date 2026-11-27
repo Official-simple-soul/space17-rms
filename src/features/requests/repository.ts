@@ -3,7 +3,7 @@ import { cache } from "react";
 import { parseSort } from "@/lib/data-view";
 import { isId, loadPage, text, type Query } from "@/lib/server-page";
 import { createClient } from "@/lib/supabase/server";
-import { requestDetail, requestStatus } from "./schema";
+import { requestDetail, requestOptions, requestStatus } from "./schema";
 
 export type RequestView = "mine" | "all" | "inbox";
 
@@ -53,19 +53,11 @@ export async function getRequest(orgId: string, id: string) {
   return request.org_id === orgId ? request : null;
 }
 
-export async function listRequestableCategories(orgId: string) {
-  const { data, error } = await (
-    await createClient()
-  ).rpc("requestable_categories", { p_org: orgId });
-  if (error) throw new Error("Could not load categories");
-  return data;
-}
-
-export async function previewSteps(categoryId: string, total: number) {
-  const { data, error } = await (
-    await createClient()
-  ).rpc("preview_steps", { p_category: categoryId, p_total: total });
-  return error ? [] : data;
+/** The caller's departments, with who approves each, and the category labels. */
+export async function getRequestOptions(orgId: string) {
+  const { data, error } = await (await createClient()).rpc("request_options", { p_org: orgId });
+  if (error) throw new Error("Could not load request options");
+  return requestOptions.parse(data);
 }
 
 export const getMyWork = cache(async (orgId: string) => {

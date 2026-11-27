@@ -72,9 +72,7 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   const staff = await add("Tunde", [["staff", null]]);
   const head = await add("Halima", [["hod", dept]]);
   const finance = await add("Femi", [["finance", null]]);
-  await admin
-    .from("categories")
-    .insert({ org_id: org, name: "Supplies", code: "SUP", applies_to: "both" });
+  await admin.from("categories").insert({ org_id: org, name: "Supplies" });
 
   // Staff: one with a receipt, one without.
   await page.setViewportSize({ width: 390, height: 844 });
@@ -165,17 +163,19 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await boss.getByRole("link", { name: "Open report" }).first().click();
   await expect(boss.getByRole("cell", { name: /Market soap/ })).toBeVisible();
   await expect(boss.getByText("₦24,500.00").first()).toBeVisible();
-  await expect(boss.getByText("1 without a receipt. You can still submit.").first()).toBeVisible();
+  await expect(boss.getByText("1 without a receipt. You can still send it.").first()).toBeVisible();
   await boss.screenshot({
     animations: "disabled",
     path: "test-results/report.png",
     fullPage: true,
   });
-  await boss.getByRole("button", { name: "Submit report" }).click();
+  await boss.getByLabel("Anything Finance should know? (optional)").fill("Soap prices went up.");
+  await boss.getByRole("button", { name: "Send to Finance" }).click();
   await expect(boss.getByRole("alertdialog")).toContainText("1 without a receipt.");
   await confirm(boss);
   await expect(boss.getByText("Under review").first()).toBeVisible();
-  await expect(boss.getByRole("button", { name: "Submit report" })).toHaveCount(0);
+  await expect(boss.getByRole("button", { name: "Send to Finance" })).toHaveCount(0);
+  await expect(boss.getByText("Soap prices went up.").first()).toBeVisible();
   await boss.setViewportSize({ width: 390, height: 844 });
   await boss.screenshot({
     animations: "disabled",

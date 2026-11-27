@@ -7,11 +7,10 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/alert-dialog";
 import { buttonStyles } from "@/components/ui/button";
-import { announceProblem, SavePanel } from "@/components/ui/save-panel";
+import { TextArea } from "@/components/ui/field";
+import { SavePanel } from "@/components/ui/save-panel";
 import { Card, Notice } from "@/components/ui/surface";
 import { FileUploader } from "@/features/files/components/file-uploader";
-import { answerErrors, fromAnswers, toAnswers } from "@/features/templates/answers";
-import { TemplateFields } from "@/features/templates/components/template-fields";
 import { formatMoney, formatMonth } from "@/lib/format";
 import { useAutosave } from "@/lib/use-autosave";
 import { saveReport, startReportFile, submitReport } from "../actions";
@@ -21,24 +20,16 @@ import { summarise } from "../summary";
 /** The head's write-up and submission. Lines come from accepted expenses, not from here. */
 export function ReportEditor({ report: r, base }: { report: ReportDetail; base: string }) {
   const router = useRouter();
-  const [answers, setAnswers] = useState(() => toAnswers(r.fields, r.form_data));
+  const [summary, setSummary] = useState(r.summary);
   const [files, setFiles] = useState(r.attachments);
-  const [checked, setChecked] = useState(false);
   const [asking, setAsking] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const { save, status, dirty, problem, setProblem, version } = useAutosave({
-    content: { id: r.id, form: fromAnswers(r.fields, answers) },
+    content: { id: r.id, summary },
     version: r.lock_version,
     paused: submitting,
     persist: (draft, lock) => saveReport({ ...draft, lock: lock! }),
   });
-  const found = answerErrors(
-    r.fields,
-    answers,
-    files.map((f) => f.field_key),
-  );
-  const incomplete = Object.keys(found).length > 0;
-  const errors = checked ? found : {};
   const { total, missing } = summarise(r.lines);
   const unreceipted = r.lines.filter((l) => l.evidence === "missing");
 
@@ -46,11 +37,11 @@ export function ReportEditor({ report: r, base }: { report: ReportDetail; base: 
     setSubmitting(true);
     setProblem("");
     try {
-      // Always saved first, so the report carries the questions shown here.
+      // Always saved first, so the report carries the summary shown here.
       if (!(await save(true))) return;
       const result = await submitReport(r.id, version.current!, missing > 0);
       // Announced as a toast because refreshing may replace this form with newer details.
-      if (result.ok) toast.success("Report submitted.");
+      if (result.ok) toast.success("Report sent to Finance.");
       else toast.error(result.message ?? "Something went wrong. Please try again.");
       router.refresh();
     } catch {
@@ -66,33 +57,31 @@ export function ReportEditor({ report: r, base }: { report: ReportDetail; base: 
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
-        setChecked(true);
-        if (incomplete) announceProblem("Check the highlighted answers.");
-        else setAsking(true);
+        setAsking(true);
       }}
     >
-      {r.fields.length > 0 && (
-        <Card className="p-6">
-          <TemplateFields
-            fields={r.fields}
-            controls={{
-              values: answers,
-              errors,
-              onChange: (key, value) => setAnswers((all) => ({ ...all, [key]: value })),
-              renderFile: (f) => (
-                <FileUploader
-                  field={f.key}
-                  label="Add file"
-                  files={files}
-                  onChange={setFiles}
-                  before={() => save(true)}
-                  start={(file) => startReportFile({ ...file, reportId: r.id, field: f.key })}
-                />
-              ),
-            }}
-          />
-        </Card>
-      )}
+      <Card className="space-y-5 p-6">
+        <TextArea
+          label="Anything Finance should know? (optional)"
+          name="summary"
+          maxLength={5000}
+          hint="For example, why spending was higher this month."
+          value={summary}
+          onChange={(e) => setSummary(e.target.value)}
+        />
+        <div>
+          <p className="text-sm font-medium">Supporting files (optional)</p>
+          <div className="mt-2">
+            <FileUploader
+              label="Add file"
+              files={files}
+              onChange={setFiles}
+              before={() => save(true)}
+              start={(file) => startReportFile({ ...file, reportId: r.id, field: null })}
+            />
+          </div>
+        </div>
+      </Card>
       <Card className="space-y-5 p-6">
         {r.waiting > 0 && (
           <Notice>
@@ -105,7 +94,7 @@ export function ReportEditor({ report: r, base }: { report: ReportDetail; base: 
         {unreceipted.length > 0 && (
           <div className="text-sm">
             <p className="font-medium">
-              {unreceipted.length} without a receipt. You can still submit.
+              {unreceipted.length} without a receipt. You can still send it.
             </p>
             <ul className="mt-2 space-y-1">
               {unreceipted.map((l) => (
@@ -121,21 +110,21 @@ export function ReportEditor({ report: r, base }: { report: ReportDetail; base: 
         )}
         {r.started ? (
           <SavePanel
-            submit="Submit report"
+            submit="Send to Finance"
             submitting={submitting}
-            problem={problem || (checked && incomplete ? "Check the highlighted answers." : "")}
+            problem={problem}
             status={status}
             dirty={dirty}
             onRetry={() => void save()}
           />
         ) : (
-          <Notice>You can submit this once {formatMonth(r.month)} begins.</Notice>
+          <Notice>You can send this once {formatMonth(r.month)} begins.</Notice>
         )}
       </Card>
       <ConfirmDialog
         open={asking}
         onOpenChange={setAsking}
-        title={`Submit the ${formatMonth(r.month)} report?`}
+        title={`Send the ${formatMonth(r.month)} report to Finance?`}
         description={[
           `${r.lines.length} ${r.lines.length === 1 ? "expense" : "expenses"}, ${formatMoney(total, r.currency)}.`,
           missing > 0 && `${missing} without a receipt.`,
@@ -150,7 +139,7 @@ export function ReportEditor({ report: r, base }: { report: ReportDetail; base: 
           className={buttonStyles({ variant: "brand" })}
           onClick={() => void submit()}
         >
-          Submit report
+          Send to Finance
         </AlertDialog.Action>
       </ConfirmDialog>
     </form>

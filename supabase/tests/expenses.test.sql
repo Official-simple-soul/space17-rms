@@ -40,8 +40,9 @@ insert into department_members (org_id, department_id, membership_id)
   from (values ('m2', 'FLD'), ('m3', 'FLD'), ('m4', 'FLD'), ('m6', 'FLD'), ('m7', 'OFC'), ('m8', 'LAB')) x (m, d);
 insert into membership_roles (org_id, membership_id, role_id)
   select pg_temp.v('org-b'), pg_temp.v('m5'), id from roles where org_id = pg_temp.v('org-b') and system_key = 'admin';
-insert into categories (org_id, name, code, applies_to) values (pg_temp.v('org-a'), 'Supplies', 'SUP', 'both'), (pg_temp.v('org-a'), 'Asks', 'ASK', 'request');
-insert into t select code, id::text from categories where org_id = pg_temp.v('org-a');
+insert into categories (org_id, name) values (pg_temp.v('org-a'), 'Supplies'), (pg_temp.v('org-a'), 'Retired');
+insert into t select upper(left(name, 3)), id::text from categories where org_id = pg_temp.v('org-a');
+update categories set archived_at = now() where id = pg_temp.v('RET');
 
 create function pg_temp.app_today() returns date language sql as $$ select (now() at time zone 'Africa/Lagos')::date $$;
 create function pg_temp.make(p_key text, p_user int, p_price bigint, p_seller text default 'Mama Nkechi', p_days int default 0,
@@ -69,7 +70,7 @@ select pg_temp.login(4);
 select throws_ok($$ select * from expense_lines $$, '42501', null, 'expenses cannot be read directly');
 select throws_ok($$ select * from reports $$, '42501', null, 'reports cannot be read directly');
 select throws_ok($$ select queue_report_reminders() $$, '42501', null, 'reminders are for the server');
-select is((select count(*)::int from expense_categories(pg_temp.v('org-a'))), 1, 'request-only categories are left out');
+select is((select count(*)::int from expense_categories(pg_temp.v('org-a'))), 1, 'archived categories are left out');
 
 -- Drafts and submitting
 select lives_ok($$ insert into t select 'blank', save_expense(pg_temp.v('org-a'), null, null, null, null, null, '', '', null, null, 'department', false, null, '[]', null) ->> 'id' $$, 'a draft may be empty');
@@ -82,7 +83,7 @@ select pg_temp.login(5);
 select throws_ok($$ select save_expense(pg_temp.v('org-a'), null, null, null, null, null, '', '', null, null, 'department', false, null, '[]', null) $$, '42501', 'not_allowed', 'other organisations cannot add');
 select pg_temp.login(4);
 select throws_ok($$ select save_expense(pg_temp.v('org-a'), null, pg_temp.v('SUP'), pg_temp.v('OFC'), null, null, '', '', null, null, 'department', false, null, '[]', null) $$, '22023', 'department_missing', 'only into your own department');
-select throws_ok($$ select save_expense(pg_temp.v('org-a'), null, pg_temp.v('ASK'), pg_temp.v('FLD'), null, null, '', '', null, null, 'department', false, null, '[]', null) $$, '22023', 'category_unavailable', 'request-only categories are refused');
+select throws_ok($$ select save_expense(pg_temp.v('org-a'), null, pg_temp.v('RET'), pg_temp.v('FLD'), null, null, '', '', null, null, 'department', false, null, '[]', null) $$, '22023', 'category_unavailable', 'archived categories are refused');
 select throws_ok($$ select save_expense(pg_temp.v('org-a'), null, null, null, null, null, '', '', null, null, 'gift', false, null, '[]', null) $$, '23514', null, 'funding is checked');
 select throws_ok($$ select submit_expense(pg_temp.v('a'), 99) $$, '22023', 'stale_expense', 'an outdated page cannot submit');
 select is(submit_expense(pg_temp.v('a'), 1), 'submitted', 'staff submit');
@@ -193,31 +194,23 @@ select throws_ok($$ select list_reports(pg_temp.v('org-a')) $$, '42501', 'not_al
 select pg_temp.login(3);
 select is((select count(*)::int from list_reports(pg_temp.v('org-a'))), 2, 'finance sees reports');
 select throws_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), true) $$, '42501', 'not_allowed', 'but does not submit them');
-reset role;
-insert into templates (org_id, kind, name) values (pg_temp.v('org-a'), 'expense_report', 'Monthly');
-insert into t select 'tpl', id::text from templates where org_id = pg_temp.v('org-a') and kind = 'expense_report';
-insert into template_versions (org_id, template_id, version, fields, published_by)
-  select pg_temp.v('org-a'), pg_temp.v('tpl'), 1, '[{"key":"summary","label":"Summary","type":"long_text","required":true}]', pg_temp.v('m1');
-update templates set current_version_id = (select id from template_versions where template_id = pg_temp.v('tpl')) where id = pg_temp.v('tpl');
-set local role authenticated;
 select pg_temp.login(2);
-select throws_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), true) $$, '22023', 'template_changed', 'current questions must be answered');
-select save_report(pg_temp.v('rep'), pg_temp.rlock('rep'), '{"other":"x"}');
-select throws_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), true) $$, '22023', 'form_invalid', 'required answers are checked');
-select throws_ok($$ select save_report(pg_temp.v('rep'), 1, '{}') $$, '22023', 'stale_report', 'an outdated page cannot save');
-select save_report(pg_temp.v('rep'), pg_temp.rlock('rep'), '{"summary":"A quiet month"}');
+select throws_ok($$ select save_report(pg_temp.v('rep'), 1, '') $$, '22023', 'stale_report', 'an outdated page cannot save');
+select save_report(pg_temp.v('rep'), pg_temp.rlock('rep'), '  A quiet month  ');
+select is(get_report(pg_temp.v('rep')) ->> 'summary', 'A quiet month', 'the summary is kept');
 select throws_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), false) $$, '22023', 'missing_evidence', 'missing receipts must be acknowledged');
 reset role;
-update membership_roles set valid_until = now() - interval '1 second', valid_from = now() - interval '1 day' where membership_id = pg_temp.v('m3');
+-- Finance reviews, with admins as backup; with neither there is nobody to send it to.
+update membership_roles set valid_until = now() - interval '1 second', valid_from = now() - interval '1 day' where membership_id in (pg_temp.v('m3'), pg_temp.v('m1'));
 set local role authenticated;
 select throws_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), true) $$, '22023', 'no_reviewer', 'someone must be able to review');
 reset role;
-update membership_roles set valid_until = null where membership_id = pg_temp.v('m3');
+update membership_roles set valid_until = null where membership_id in (pg_temp.v('m3'), pg_temp.v('m1'));
 set local role authenticated;
 select lives_ok($$ select submit_report(pg_temp.v('rep'), pg_temp.rlock('rep'), true) $$, 'the head submits');
 select is(get_report(pg_temp.v('rep')) ->> 'status', 'under_review', 'it waits for review');
 select matches(get_report(pg_temp.v('rep')) ->> 'number', '^RPT-', 'with a number');
-select throws_ok($$ select save_report(pg_temp.v('rep'), pg_temp.rlock('rep'), '{}') $$, '22023', 'report_locked', 'it can no longer be edited');
+select throws_ok($$ select save_report(pg_temp.v('rep'), pg_temp.rlock('rep'), '') $$, '22023', 'report_locked', 'it can no longer be edited');
 select throws_ok($$ select remove_report_line(pg_temp.v('own'), pg_temp.lock('own'), 'Too late now') $$, '22023', 'report_locked', 'nor lose lines');
 select throws_ok($$ select start_expense_file(pg_temp.v('own'), 'vendor_receipt', 'r.pdf', 'application/pdf', 100) $$, '22023', 'expense_locked', 'nor gain evidence');
 select pg_temp.login(3);

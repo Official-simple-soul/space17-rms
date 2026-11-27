@@ -3,8 +3,6 @@ import { LinkTabs } from "@/components/ui/tabs";
 
 const TABS = [
   { id: "categories", label: "Categories" },
-  { id: "templates", label: "Templates" },
-  { id: "workflows", label: "Workflows" },
   { id: "numbering", label: "Numbering" },
 ] as const;
 type Tab = (typeof TABS)[number]["id"];
@@ -21,8 +19,8 @@ export function ConfigurationHeader({
   return (
     <>
       <PageHeader
-        title="Configuration"
-        description="How requests and reports work in your organisation."
+        title="Categories"
+        description="Optional labels for grouping spending, and how reference numbers look."
         action={action}
       />
       <LinkTabs

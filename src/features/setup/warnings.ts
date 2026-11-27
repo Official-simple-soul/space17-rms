@@ -11,24 +11,22 @@ const people = (n: number) => `${n} ${n === 1 ? "person" : "people"}`;
 /** Plain wording and where to fix it. */
 export function describeWarning(w: Warning, base: string): { text: string; href: string } {
   switch (w.code) {
-    case "category_approvers":
+    case "department_approvers":
       return {
-        text: `${w.subject}: ${people(w.found)} can approve, ${w.needed} needed so requests never get stuck.`,
-        href: `${base}/configuration/categories/${w.subject_id}`,
-      };
-    case "workflow_step":
-      return {
-        text: `${w.subject}: ${people(w.found)} can approve, ${w.needed} needed.`,
-        href: `${base}/configuration/workflows/${w.subject_id}`,
+        text:
+          w.found === 0
+            ? `No one can approve requests for ${w.subject}. Choose a head for it.`
+            : `Only one person can approve requests for ${w.subject}, so their own requests would get stuck. Add a head, deputy or approver.`,
+        href: `${base}/members`,
       };
     case "payers":
       return {
-        text: `${people(w.found)} can record payments. Have at least ${w.needed}, as no one pays their own request.`,
+        text: `${people(w.found)} can record payments. Have at least ${w.needed}, as no one pays their own request. Give someone the Finance role.`,
         href: `${base}/members`,
       };
     case "department_head":
       return { text: `${w.subject} has no head of department.`, href: `${base}/members` };
     default:
-      return { text: w.subject ?? "Check your setup.", href: `${base}/configuration` };
+      return { text: w.subject ?? "Check your setup.", href: `${base}/members` };
   }
 }

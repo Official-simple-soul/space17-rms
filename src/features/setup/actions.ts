@@ -16,5 +16,5 @@ export async function addStarterConfiguration(
   ).rpc("add_starter_configuration", { p_org: input.data.orgId });
   if (error) return failure(error);
   revalidatePath("/o/[orgSlug]", "layout");
-  return { ok: true, message: "Starter set added." };
+  return { ok: true, message: "Categories added." };
 }

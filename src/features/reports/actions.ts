@@ -6,31 +6,11 @@ import { badFile, uploadInput, type UploadStart } from "@/features/files/schema"
 import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
-import { redirectWith } from "@/lib/flash";
 import { parseSaved } from "@/lib/rpc-json";
 import { createClient } from "@/lib/supabase/server";
 import { draftSchema, type Draft } from "./schema";
 
 const refresh = () => revalidatePath("/o/[orgSlug]", "layout");
-
-export async function openReport(_: ActionState, form: FormData): Promise<ActionState> {
-  const input = z
-    .object({
-      orgId: z.uuid(),
-      slug: z.string().regex(/^[a-z0-9-]+$/),
-      departmentId: z.uuid(),
-      month: z.iso.date(),
-    })
-    .safeParse(Object.fromEntries(form));
-  if (!input.success) return invalid(input.error);
-  const v = input.data;
-  const { data, error } = await (
-    await createClient()
-  ).rpc("open_report", { p_org: v.orgId, p_department: v.departmentId, p_month: v.month });
-  if (error) return failure(error);
-  refresh();
-  return redirectWith(`/o/${v.slug}/reports/${data}`, "Report opened.");
-}
 
 type SaveResult = { ok: true; version: number } | { ok: false; message: string; stale: boolean };
 
@@ -41,7 +21,7 @@ export async function saveReport(input: Draft): Promise<SaveResult> {
   const v = parsed.data;
   const { data, error } = await (
     await createClient()
-  ).rpc("save_report", { p_id: v.id, p_lock: v.lock, p_form: v.form });
+  ).rpc("save_report", { p_id: v.id, p_lock: v.lock, p_summary: v.summary });
   if (error)
     return {
       ok: false,

@@ -1,16 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { Notice, PageHeader } from "@/components/ui/surface";
-import { listDepartments } from "@/features/departments/repository";
+import { PageHeader } from "@/components/ui/surface";
 import { getOrganisation } from "@/features/organisations/repository";
 import { DeleteDraft } from "@/features/requests/components/request-actions";
 import { RequestEditor } from "@/features/requests/components/request-editor";
-import {
-  getRequest,
-  listRequestableCategories,
-  previewSteps,
-} from "@/features/requests/repository";
+import { getRequest, getRequestOptions } from "@/features/requests/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
 import { text } from "@/lib/server-page";
 
@@ -28,11 +23,9 @@ export default async function NewRequestPage({
   const request = draft ? await getRequest(organisation.id, draft) : null;
   if (draft && !request?.is_requester) notFound();
   if (request && request.status !== "draft") redirect(`${base}/${request.id}`);
-  const [categories, departments, details, steps] = await Promise.all([
-    listRequestableCategories(organisation.id),
-    listDepartments(organisation.id),
+  const [options, details] = await Promise.all([
+    getRequestOptions(organisation.id),
     getOrganisation(organisation.id),
-    request ? previewSteps(request.category.id, request.total_minor) : [],
   ]);
   return (
     <>
@@ -40,26 +33,17 @@ export default async function NewRequestPage({
         ← Requests
       </Link>
       <PageHeader
-        title="New request"
+        title="Ask for something"
         description="Saved as you type."
         action={request && <DeleteDraft id={request.id} slug={orgSlug} />}
       />
-      {categories.length || request ? (
-        <RequestEditor
-          orgId={organisation.id}
-          base={base}
-          currency={details.currency}
-          request={request}
-          categories={categories}
-          departments={departments}
-          initialSteps={steps}
-        />
-      ) : (
-        <Notice>
-          There&apos;s nothing you can request yet. Ask an admin to add you to a department and
-          check that its categories are set up.
-        </Notice>
-      )}
+      <RequestEditor
+        orgId={organisation.id}
+        base={base}
+        currency={details.currency}
+        request={request}
+        options={options}
+      />
     </>
   );
 }

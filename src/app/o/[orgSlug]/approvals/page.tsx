@@ -33,7 +33,7 @@ export default async function ApprovalsPage({
         base={`/o/${orgSlug}/requests`}
         currency={details.currency}
         now={new Date().toISOString()}
-        categories={categories.filter((c) => c.appliesTo !== "expense")}
+        categories={categories}
         departments={departments}
       />
     </>

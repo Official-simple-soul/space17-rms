@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(30);
+select * from no_plan();
 
 insert into auth.users (id, email, email_confirmed_at, aud, role)
 select ('00000000-0000-0000-0000-00000000000' || n)::uuid, 'u' || n || '@test.local', now(), 'authenticated', 'authenticated'
@@ -33,13 +33,11 @@ insert into departments (org_id, name, code) values (pg_temp.v('org'), 'Mine', '
 insert into t select code, id::text from departments where org_id = pg_temp.v('org');
 insert into department_members (org_id, department_id, membership_id) values
   (pg_temp.v('org'), pg_temp.v('MIN'), pg_temp.v('m2')), (pg_temp.v('org'), pg_temp.v('OTH'), pg_temp.v('m3'));
+-- Approvers are given for a department.
+update membership_roles set department_id = pg_temp.v('OTH') where membership_id = pg_temp.v('m3');
 set local role authenticated;
 select pg_temp.login(1);
 select add_starter_configuration(pg_temp.v('org'));
-insert into t select code, id::text from categories where org_id = pg_temp.v('org');
-reset role;
-insert into category_departments (org_id, category_id, department_id) values (pg_temp.v('org'), pg_temp.v('EQP'), pg_temp.v('OTH'));
-set local role authenticated;
 
 select pg_temp.login(2);
 select is((select count(*)::int from memberships), 1, 'only their own membership');
@@ -49,25 +47,19 @@ select is((select count(*)::int from department_members), 1, 'only their own dep
 select is((select string_agg(code, ',') from departments), 'MIN', 'no other department');
 select is((select count(*)::int from roles), 0, 'no roles');
 select is((select count(*)::int from role_permissions), 0, 'no permissions of roles');
-select is((select count(*)::int from templates), 0, 'no templates');
-select is((select count(*)::int from template_versions), 0, 'no template versions');
-select is((select count(*)::int from workflows), 0, 'no workflows');
-select is((select count(*)::int from workflow_steps), 0, 'no workflow steps');
-select is((select count(*)::int from category_approvers), 0, 'no approver lists');
 select is((select count(*)::int from number_sequences), 0, 'no numbering');
-select is((select count(*)::int from categories), 4, 'only categories their departments can use');
+select is((select count(*)::int from categories), 7, 'category labels, to choose from');
 select throws_ok($$ select * from list_members(pg_temp.v('org')) $$, '42501', 'not_allowed', 'cannot list people');
 select throws_ok($$ select * from department_overview(pg_temp.v('org')) $$, '42501', 'not_allowed', 'cannot list departments');
 select throws_ok($$ select * from role_overview(pg_temp.v('org')) $$, '42501', 'not_allowed', 'cannot list roles');
 select throws_ok($$ select * from setup_counts(pg_temp.v('org')) $$, '42501', 'not_allowed', 'cannot count');
-select throws_ok($$ select * from preview_steps(pg_temp.v('EQP'), 0) $$, 'P0002', 'not_found', 'no steps for a category they cannot use');
-select is((select count(*)::int from preview_steps(pg_temp.v('OFF'), 0)), 1, 'steps for a category they can use');
-select is((select count(*)::int from requestable_categories(pg_temp.v('org'))), 4, 'can still request');
+select is(jsonb_array_length(request_options(pg_temp.v('org')) -> 'departments'), 1, 'can still request');
+select is(jsonb_array_length(request_options(pg_temp.v('org')) #> '{departments,0,approvers}'), 1, 'and sees who will approve');
 select is((select count(*)::int from my_permissions(pg_temp.v('org'))), 1, 'can still read their own permissions');
 
 select pg_temp.login(3);
 select is((select count(*)::int from memberships), 1, 'an approver cannot list people');
-select is((select count(*)::int from departments), 2, 'an approver can filter by department');
+select is((select string_agg(code, ',')  from departments), 'OTH', 'an approver sees their own department');
 select is((select count(*)::int from roles), 0, 'an approver cannot read roles');
 
 select pg_temp.login(4);
@@ -76,7 +68,7 @@ select is((select count(*)::int from departments), 2, 'an auditor sees departmen
 
 select pg_temp.login(1);
 select is((select count(*)::int from memberships), 4, 'an admin sees everyone');
-select is((select count(*)::int from workflows), 2, 'an admin sees workflows');
+select is((select count(*)::int from categories), 7, 'an admin sees categories');
 select set_member_status(pg_temp.v('org'), pg_temp.v('m2'), 'suspended', 'Testing access');
 select pg_temp.login(2);
 select is((select count(*)::int from departments) + (select count(*)::int from categories), 0, 'a suspended person sees nothing');

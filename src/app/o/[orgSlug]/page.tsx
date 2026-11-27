@@ -1,9 +1,11 @@
 import {
   Banknote,
   Building2,
+  ChevronRight,
   CircleCheck,
   ClipboardList,
   FileText,
+  Plus,
   Receipt,
   ShieldCheck,
   Undo2,
@@ -11,7 +13,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { buttonStyles } from "@/components/ui/button";
 import { Card, PageHeader } from "@/components/ui/surface";
 import { getMyWork } from "@/features/requests/repository";
 import { SetupChecklist, SetupWarnings } from "@/features/setup/components/setup-checklist";
@@ -120,25 +121,14 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
     ? [
         { label: "Turn on two-step verification", done: session.aal === "aal2", href: "/account" },
         { label: "Add departments", done: counts.departments > 0, href: `${base}/departments` },
-        {
-          label: "Create categories",
-          done: counts.categories > 0,
-          href: `${base}/configuration/categories`,
-        },
         { label: "Invite your team", done: counts.members > 1, href: `${base}/members` },
         {
-          label: "Give every department a head",
+          label: "Choose a head for every department",
           done: counts.departments > 0 && !blocked("department_head"),
           href: `${base}/members`,
         },
         {
-          label: "Assign enough approvers",
-          done:
-            counts.categories > 0 && !blocked("category_approvers") && !blocked("workflow_step"),
-          href: `${base}/configuration/categories`,
-        },
-        {
-          label: "Assign two people to record payments",
+          label: "Choose two people to record payments",
           done: !blocked("payers"),
           href: `${base}/members`,
         },
@@ -149,14 +139,29 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
       <PageHeader
         title={`Hello, ${session.name.split(" ")[0]}`}
         description={`Here's where ${organisation.name} stands.`}
-        action={
-          can("requests.create") && (
-            <Link href={`${base}/requests/new`} className={buttonStyles({ variant: "brand" })}>
-              New request
-            </Link>
-          )
-        }
       />
+      {can("requests.create") && (
+        <Link
+          href={`${base}/requests/new`}
+          className="group rounded-card mb-6 block focus-visible:outline-offset-4"
+        >
+          <Card className="lift flex items-center gap-5 p-5 sm:p-6">
+            <span className="from-brand grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br to-[#c01526] text-white shadow-[0_8px_20px_-8px_rgb(163_13_26/0.7)] transition-transform duration-300 ease-(--ease-spring) group-hover:scale-105 group-hover:-rotate-3">
+              <Plus className="size-7" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-lg font-semibold">Ask for something</span>
+              <span className="text-muted block text-sm">
+                Say what you need and why. Someone will approve it.
+              </span>
+            </span>
+            <ChevronRight
+              className="text-muted size-5 shrink-0 transition-transform group-hover:translate-x-1"
+              aria-hidden
+            />
+          </Card>
+        </Link>
+      )}
       <div className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {tasks.map(({ label, value, icon: Icon, href }) => (
           <Link key={label} href={href} className="group rounded-card block">

@@ -2,7 +2,6 @@ import { Check, Circle, Clock, X } from "lucide-react";
 import { Card } from "@/components/ui/surface";
 import { Term } from "@/components/ui/term";
 import { Files } from "@/features/files/components/files";
-import { TemplateAnswers } from "@/features/templates/components/template-answers";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { RequestDetail } from "../schema";
@@ -17,24 +16,24 @@ export function RequestDetails({
   const money = (minor: number) => formatMoney(minor, r.currency);
   const reduced = r.items.some((i) => i.approved_minor !== null);
   const general = r.attachments.filter((a) => a.field_key === null);
+  const quotes = r.attachments.filter((a) => a.field_key === "quotation");
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <dl className="grid gap-5 sm:grid-cols-2">
-          <Term label="Purpose" className="sm:col-span-2">
+          <Term label="Why it is needed" className="sm:col-span-2">
             {r.purpose || "—"}
           </Term>
           <Term label="Requested by">{r.requester}</Term>
           <Term label="Department">{r.department?.name ?? "—"}</Term>
-          <Term label="Category">{r.category.name}</Term>
+          {r.category && <Term label="Category">{r.category.name}</Term>}
           <Term label="Needed by">{r.needed_by ? formatDate(r.needed_by) : "—"}</Term>
-          <TemplateAnswers
-            fields={r.fields}
-            data={r.form_data}
-            files={r.attachments}
-            filesBase={filesBase}
-            currency={r.currency}
-          />
+          {r.supplier && <Term label="Where to buy it">{r.supplier}</Term>}
+          {quotes.length > 0 && (
+            <Term label="Quotation" className="sm:col-span-2">
+              <Files files={quotes} base={filesBase} />
+            </Term>
+          )}
         </dl>
       </Card>
       {r.items.length > 0 && (

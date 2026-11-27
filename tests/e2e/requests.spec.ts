@@ -1,7 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { admin, createOrganisation, enrol, password, signIn } from "./helpers";
 
-test("staff request, approver returns, reduces and approves", async ({ page, browser }) => {
+test("staff ask, the department approver returns, reduces and approves", async ({
+  page,
+  browser,
+}) => {
   test.setTimeout(180_000);
   const id = `r${Date.now().toString(36)}`;
   const owner = `boss-${id}@test.local`;
@@ -34,9 +37,13 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
       .eq("org_id", org)
       .eq("system_key", roleKey)
       .single();
-    await admin
-      .from("membership_roles")
-      .insert({ org_id: org, membership_id: member.data!.id, role_id: role.data!.id });
+    // Approvers are given for a department.
+    await admin.from("membership_roles").insert({
+      org_id: org,
+      membership_id: member.data!.id,
+      role_id: role.data!.id,
+      department_id: roleKey === "approver" ? dept : null,
+    });
     await admin
       .from("department_members")
       .insert({ org_id: org, department_id: dept, membership_id: member.data!.id });
@@ -52,23 +59,25 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await enrol(page);
   await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(`${base}/configuration`);
-  await page.getByRole("button", { name: "Add starter set" }).click();
-  await expect(page.getByRole("row", { name: /Office supplies/ })).toBeVisible();
+  await page.getByRole("button", { name: "Add these" }).click();
+  await expect(page.getByRole("row", { name: /Supplies/ })).toBeVisible();
 
-  // Staff: start, autosave, validate, upload, submit.
+  // Staff: no setup needed, the form says who approves; autosave, validate, upload, send.
   const staff = await (await browser.newContext()).newPage();
   await signIn(staff, staffEmail);
   await expect(staff).toHaveURL(new RegExp(`${base}$`));
-  await staff.getByRole("link", { name: "New request" }).click();
-  await staff.getByLabel("Category").selectOption({ label: "Office supplies" });
+  await staff.getByRole("link", { name: /Ask for something/ }).click();
+  await expect(staff.getByText("Amaka will approve this.").first()).toBeVisible();
+  await expect(staff.getByLabel("Which department is this for?")).toHaveCount(0);
+  await staff.getByRole("button", { name: "Send request" }).click();
+  await expect(staff.getByText("Say what you need.").first()).toBeVisible();
+  await expect(staff.getByText("Enter how much it will cost.").first()).toBeVisible();
+  await staff.getByLabel("What do you need?").fill("Printer paper");
   await expect(staff).toHaveURL(/new\?draft=/);
-  await staff.getByLabel("Title").fill("Printer paper");
   await expect(staff.getByText("Draft saved").first()).toBeVisible();
   await expect(staff.getByText("Not saved yet")).toHaveCount(0);
-  await staff.getByRole("button", { name: "Submit request" }).click();
-  await expect(staff.getByText("Say what this is for.").first()).toBeVisible();
-  await staff.getByLabel("Purpose").fill("Monthly office supply");
-  await staff.getByRole("button", { name: "Add item" }).click();
+  await staff.getByLabel("Why do you need it?").fill("Monthly office supply");
+  await staff.getByRole("button", { name: "List items separately" }).click();
   await staff.getByLabel("Item 1", { exact: true }).fill("A4 paper");
   await staff.getByLabel("Quantity").fill("4");
   await staff.getByLabel("Unit price, NGN").fill("3,500");
@@ -76,17 +85,19 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
 
   const upload = staff.locator('input[type="file"]:not([capture])');
   await upload
-    .last()
+    .first()
     .setInputFiles({ name: "bad.pdf", mimeType: "application/pdf", buffer: Buffer.from("<html>") });
   await expect(staff.getByText("That file couldn't be read.").first()).toBeVisible();
   await staff.getByRole("button", { name: "Dismiss" }).click();
-  await upload.last().setInputFiles({
+  await upload.first().setInputFiles({
     name: "list.pdf",
     mimeType: "application/pdf",
     buffer: Buffer.from("%PDF-1.4\nprice list"),
   });
   await expect(staff.getByRole("button", { name: "Remove list.pdf" })).toBeVisible();
-  await upload.first().setInputFiles({
+  await staff.getByText("More options").click();
+  await staff.getByLabel("Where to buy it").fill("Office Mart");
+  await upload.last().setInputFiles({
     name: "quote.png",
     mimeType: "image/png",
     buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 1, 2, 3]),
@@ -102,7 +113,8 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   // A reload keeps the draft.
   await expect(staff.getByText("Draft saved").first()).toBeVisible();
   await staff.reload();
-  await expect(staff.getByLabel("Title")).toHaveValue("Printer paper");
+  await expect(staff.getByLabel("What do you need?")).toHaveValue("Printer paper");
+  await expect(staff.getByLabel("Where to buy it")).toHaveValue("Office Mart");
   await expect(staff.getByLabel("Unit price, NGN")).toHaveValue("3500.00");
   await expect(staff.getByRole("button", { name: "Remove quote.png" })).toBeVisible();
 
@@ -121,7 +133,7 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await expect(phone.getByText(/quote or proforma invoice/).first()).toBeVisible();
   await phone
     .locator('input[capture="environment"]')
-    .last()
+    .first()
     .setInputFiles({
       name: "snap.png",
       mimeType: "image/png",
@@ -138,7 +150,7 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   // A second tab that saved first stops this one from overwriting.
   const second = await staff.context().newPage();
   await second.goto(staff.url());
-  await second.getByLabel("Title").fill("Printer paper and ink");
+  await second.getByLabel("What do you need?").fill("Printer paper and ink");
   await expect(second.getByText("Draft saved").first()).toBeVisible();
   await expect
     .poll(async () => {
@@ -147,14 +159,14 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
     })
     .toBe("Printer paper and ink");
   await second.close();
-  await staff.getByLabel("Title").fill("Old title");
+  await staff.getByLabel("What do you need?").fill("Old title");
   await expect(
     staff.getByText("This request has changed since you opened it.").first(),
   ).toBeVisible();
   // The page is still dirty, so the browser asks before leaving it.
   staff.once("dialog", (d) => d.accept());
   await staff.getByRole("button", { name: "Reload" }).click();
-  await expect(staff.getByLabel("Title")).toHaveValue("Printer paper and ink");
+  await expect(staff.getByLabel("What do you need?")).toHaveValue("Printer paper and ink");
 
   // With one approver and one requester, submission works; nobody else sees the draft.
   const other = await (await browser.newContext()).newPage();
@@ -163,13 +175,14 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   const detail = staff.url().replace("new?draft=", "");
   await other.goto(detail);
   await expect(other.getByText("We couldn't find that page").first()).toBeVisible();
-  await staff.getByRole("button", { name: "Submit request" }).click();
-  await expect(staff.getByText("Request submitted.").first()).toBeVisible();
+  await staff.getByRole("button", { name: "Send request" }).click();
+  await expect(staff.getByText("Request sent.").first()).toBeVisible();
   await expect(staff).toHaveURL(detail);
   await expect(staff.getByText(/REQ-\d{4}-0001/).first()).toBeVisible();
   await expect(staff.getByText("Waiting for Amaka").first()).toBeVisible();
   await expect(staff.getByText("You can't approve your own request.").first()).toBeVisible();
   await expect(staff.getByRole("button", { name: "Approve" })).toHaveCount(0);
+  await expect(staff.getByText("Office Mart").first()).toBeVisible();
   await staff.screenshot({
     animations: "disabled",
     path: "test-results/request-detail.png",
@@ -212,9 +225,9 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
   await staff.getByRole("button", { name: "Add item" }).click();
   await staff.getByLabel("Item 2", { exact: true }).fill("Ink");
   await staff.getByLabel("Unit price, NGN").last().fill("10,000");
-  await staff.getByRole("button", { name: "Submit request" }).click();
+  await staff.getByRole("button", { name: "Send request" }).click();
   await expect(staff).toHaveURL(detail);
-  await expect(staff.getByText("Awaiting approval").first()).toBeVisible();
+  await expect(staff.getByText("Waiting for approval").first()).toBeVisible();
 
   // Approver reduces an amount. An outdated tab is told, not obeyed.
   await approver.goto(detail);
@@ -265,45 +278,23 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
 
   // Delete a draft; admins see everything submitted but no drafts.
   await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
+  await staff.getByLabel("What do you need?").fill("Spare chairs");
   await expect(staff).toHaveURL(/new\?draft=/);
   await expect(staff.getByRole("button", { name: "Delete draft" })).toBeVisible();
-  await expect(staff.getByText("Not saved yet")).toHaveCount(0);
   await staff.goto(`${base}/requests`);
-  await expect(staff.getByRole("row", { name: /Untitled request/ })).toBeVisible();
+  await expect(staff.getByRole("row", { name: /Spare chairs/ })).toBeVisible();
   await page.goto(`${base}/requests?tab=all`);
   await expect(page.getByRole("row", { name: /Printer paper and ink/ })).toBeVisible();
-  await expect(page.getByText("Untitled request")).toHaveCount(0);
+  await expect(page.getByText("Spare chairs")).toHaveCount(0);
   await page.screenshot({ animations: "disabled", path: "test-results/requests-all.png" });
-  await staff.getByRole("link", { name: "Untitled request" }).click();
+  await staff.getByRole("link", { name: "Spare chairs" }).click();
   await staff.getByRole("button", { name: "Delete draft" }).click();
   await staff.getByRole("alertdialog").getByRole("button", { name: "Delete draft" }).click();
   await expect(staff.getByText("Draft deleted.").first()).toBeVisible();
   await expect(staff).toHaveURL(/\/requests$/);
-  await expect(staff.getByText("Untitled request")).toHaveCount(0);
+  await expect(staff.getByText("Spare chairs")).toHaveCount(0);
 
-  // Withdraw.
-  await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("Title").fill("Use the van");
-  await staff.getByLabel("Purpose").fill("Moving boxes");
-  await staff.getByRole("button", { name: "Submit request" }).click();
-  await expect(staff.getByText("Choose a category.", { exact: true }).first()).toBeVisible();
-  await expect(staff.getByText("Choose a category first, then add files.").first()).toBeVisible();
-  await staff.evaluate(() => document.body.setAttribute("data-same-page", ""));
-  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
-  await staff.getByLabel("Purpose").fill("Moving boxes today");
-  // What was typed first is kept when the category's questions appear.
-  await expect(staff.getByLabel("Preferred supplier")).toBeVisible();
-  await expect(staff.getByLabel("Title")).toHaveValue("Use the van");
-  await expect(staff.getByLabel("Purpose")).toHaveValue("Moving boxes today");
-  await expect(staff.locator("body[data-same-page]")).toBeAttached();
-  await staff.getByRole("button", { name: "Submit request" }).click();
-  await staff.getByRole("button", { name: "Withdraw" }).click();
-  await staff.getByLabel("Reason", { exact: true }).fill("No longer needed");
-  await staff.getByRole("button", { name: "Withdraw request" }).click();
-  await expect(staff.getByText("Withdrawn", { exact: true }).first()).toBeVisible();
-
-  // Admin reassigns a waiting approval.
+  // One amount is enough; withdraw.
   await staff.setViewportSize({ width: 390, height: 844 });
   for (const path of ["requests", "requests/new", "notifications"]) {
     await staff.goto(`${base}/${path}`);
@@ -314,23 +305,33 @@ test("staff request, approver returns, reduces and approves", async ({ page, bro
     ).toBe(true);
   }
   await staff.goto(`${base}/requests/new`);
-  await staff.getByLabel("Category").selectOption({ label: "Equipment" });
-  await expect(staff.getByLabel("Title")).toBeVisible();
+  await staff.getByLabel("What do you need?").fill("Bus fare");
+  await staff.getByLabel("Why do you need it?").fill("Trip to the market");
+  await staff.getByLabel("How much will it cost?").fill("4,500");
+  await expect(staff.getByText("₦4,500.00").first()).toBeVisible();
   await staff.screenshot({
     animations: "disabled",
     path: "test-results/m-request-edit.png",
     fullPage: true,
   });
   expect(await staff.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await staff.getByLabel("Title").fill("Use the hall");
-  await staff.getByLabel("Purpose").fill("Training day");
-  await expect(staff.getByLabel("Preferred supplier")).toBeVisible();
-  await staff.getByRole("button", { name: "Submit request" }).click();
+  await staff.getByRole("button", { name: "Send request" }).click();
+  await expect(staff.getByText("Waiting for Amaka").first()).toBeVisible();
+  await expect(staff.getByText("₦4,500.00").first()).toBeVisible();
+  await staff.getByRole("button", { name: "Withdraw" }).click();
+  await staff.getByLabel("Reason", { exact: true }).fill("No longer needed");
+  await staff.getByRole("button", { name: "Withdraw request" }).click();
+  await expect(staff.getByText("Withdrawn", { exact: true }).first()).toBeVisible();
+
+  // An admin can approve as backup, without being alerted about every request.
+  await staff.goto(`${base}/requests/new`);
+  await staff.getByLabel("What do you need?").fill("Gas refill");
+  await staff.getByLabel("Why do you need it?").fill("For cooking");
+  await staff.getByLabel("How much will it cost?").fill("12,000");
+  await staff.getByRole("button", { name: "Send request" }).click();
   await expect(staff.getByText("Waiting for Amaka").first()).toBeVisible();
   await page.goto(staff.url());
-  await page.getByRole("button", { name: "Reassign" }).click();
-  await page.getByLabel("To", { exact: true }).selectOption({ label: "Amaka" });
-  await page.getByLabel("Reason", { exact: true }).fill("Only approver available");
-  await page.getByRole("dialog").getByRole("button", { name: "Reassign" }).click();
-  await expect(page.getByText("To Amaka: Only approver available").first()).toBeVisible();
+  await page.getByRole("button", { name: "Approve", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Approve" }).click();
+  await expect(page.getByText(/Ada Owner approved/).first()).toBeVisible();
 });

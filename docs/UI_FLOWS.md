@@ -1,6 +1,6 @@
 # RMS: UI Flows
 
-Status: agreed, 25 November 2026. Covers Foundation and MVP. Read with [SCOPE.md](SCOPE.md) and [SCHEMA.md](SCHEMA.md).
+Status: agreed, 25 November 2026; simplified 27 November 2026. Covers Foundation and MVP. Read with [SCOPE.md](SCOPE.md) and [SCHEMA.md](SCHEMA.md).
 
 ## 1. Principles
 
@@ -31,9 +31,9 @@ The header has search, notifications and profile. Mobile uses a bottom bar: Home
 **New organisation**
 1. Superadmin enters the email and sends an invite.
 2. Recipient opens the link, sets a password and verifies MFA.
-3. Dashboard checklist: two-step verification → departments → categories → invite staff → heads → approvers → payers. An optional starter set adds generic categories, templates and workflows.
+3. Dashboard checklist: two-step verification → departments → invite people → a head for every department → two people who record payments. Categories are optional; a starter set adds common ones.
 4. Only organisation details are required to enter; the checklist tracks the rest.
-5. The checklist warns if a category has fewer than two possible approvers, or the organisation fewer than two payers.
+5. Warnings: a department with fewer than two people who can approve (nobody approves their own request), no head, or fewer than two payers. Each links to the fix.
 
 **Invited staff:** open link → set password, or sign in if the account exists → confirm name → dashboard.
 
@@ -44,10 +44,11 @@ The header has search, notifications and profile. Mobile uses a bottom bar: Home
 ## 4. Staff
 
 **Create a request**
-1. One form: choose a category (filtered to the user's departments) and its questions and approvers appear. The draft saves from then on.
-2. Fill in title, purpose, department, items and template fields; add attachments. On phones and tablets, every upload also offers **Take photo**.
-3. Review the total and expected approval steps.
-4. Submit; the number and timeline appear.
+Written for anyone, including kitchen staff and children.
+1. The dashboard's large **Ask for something** button opens one short form: what do you need, why, how much (a best guess, or items listed separately), and an optional photo. The department fills itself in when the person has one.
+2. The form says who will approve it ("Amaka will approve this") and warns before typing if nobody can.
+3. **More options** holds needed-by date, category, where to buy it and a quotation. On phones and tablets, every upload also offers **Take photo**.
+4. The draft saves once something is typed. **Send request**; the number and timeline appear.
 
 **Track a request:** detail page shows status, next actor, items, comments, payments and timeline. Available actions: edit (draft/returned), withdraw (pending), confirm receipt (paid), add expenses (received).
 
@@ -61,6 +62,8 @@ The header has search, notifications and profile. Mobile uses a bottom bar: Home
 If AI is off, over quota or fails, the manual form opens. Likely duplicates show a warning and a link to the match.
 
 ## 5. Approver
+
+Who approves: the department's head or deputy, anyone given the Approver role for that department, or an org admin as backup. Admins are only alerted when the department has nobody else. One approval is enough.
 
 1. The inbox lists pending items, oldest first, with requester, category, amount and age.
 2. Detail shows the request, attachments, policy flags and earlier decisions.
@@ -111,9 +114,7 @@ The seller, amounts and date cannot be changed at this step; return the line to 
 | Users | Invite one or CSV (preview errors before sending), assign, suspend, offboard |
 | Offboard | List pending work → choose replacements → deactivate |
 | Roles | Permission grid with scope per row; warns before removing the last admin |
-| Categories | Name, departments, template, workflow, approvers |
-| Templates | Add, order and preview fields → publish a new version |
-| Workflows | Ordered steps, approver, threshold, required approvals → test with a sample amount → publish |
+| Categories | Name only: add, rename, archive. Optional labels for reports |
 | Join requests | Approve with department and role, or reject |
 | Audit log | Filter by person, action, date and record; export |
 

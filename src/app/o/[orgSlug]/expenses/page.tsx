@@ -72,7 +72,7 @@ export default async function ExpensesPage({
         view={view}
         base={base}
         currency={details.currency}
-        categories={categories.filter((c) => c.appliesTo !== "request")}
+        categories={categories}
         departments={departments}
       />
     </>

@@ -1,14 +1,10 @@
-import { Plus } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { buttonStyles } from "@/components/ui/button";
+import { FormDialog } from "@/components/ui/form-dialog";
 import { CategoriesView } from "@/features/categories/components/categories-view";
+import { CategoryForm } from "@/features/categories/components/category-forms";
 import { listCategories } from "@/features/categories/repository";
 import { ConfigurationHeader } from "@/features/configuration/components/configuration-header";
-import { listDepartments } from "@/features/departments/repository";
 import { StarterSet } from "@/features/setup/components/starter-set";
-import { getSetupCounts, listSetupWarnings } from "@/features/setup/repository";
-import { listWorkflows } from "@/features/workflows/repository";
 import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
@@ -19,54 +15,20 @@ export default async function CategoriesPage({
 }: PageProps<"/o/[orgSlug]/configuration/categories">) {
   const { orgSlug } = await params;
   const { organisation } = await requireSection(orgSlug, "configuration");
-  const [categories, departments, workflows, warnings, counts, view] = await Promise.all([
-    listCategories(organisation.id),
-    listDepartments(organisation.id),
-    listWorkflows(organisation.id, "request"),
-    listSetupWarnings(organisation.id),
-    getSetupCounts(organisation.id),
-    getListView(),
-  ]);
-  const department = new Map(departments.map((d) => [d.id, d.name]));
-  const workflow = new Map(workflows.map((w) => [w.id, w.name]));
-  const short = new Set(
-    warnings.filter((w) => w.code === "category_approvers").map((w) => w.subject_id),
-  );
-  const base = `/o/${orgSlug}/configuration/categories`;
+  const [categories, view] = await Promise.all([listCategories(organisation.id), getListView()]);
   return (
     <>
       <ConfigurationHeader
         slug={orgSlug}
         current="categories"
         action={
-          <Link href={`${base}/new`} className={buttonStyles({ variant: "brand" })}>
-            <Plus className="size-4" aria-hidden />
-            New category
-          </Link>
+          <FormDialog label="Add category" title="Add category" variant="brand">
+            <CategoryForm orgId={organisation.id} />
+          </FormDialog>
         }
       />
-      {counts.categories + counts.templates + counts.workflows === 0 && (
-        <StarterSet orgId={organisation.id} />
-      )}
-      <CategoriesView
-        view={view}
-        base={base}
-        departments={departments}
-        rows={categories.map((c) => ({
-          id: c.id,
-          name: c.name,
-          code: c.code,
-          appliesTo: c.appliesTo,
-          departmentIds: c.departmentIds,
-          departments:
-            c.departmentIds.flatMap((d) => department.get(d) ?? []).join(", ") || "All departments",
-          workflow:
-            c.appliesTo === "expense"
-              ? "Not needed"
-              : (c.workflowId && workflow.get(c.workflowId)) || "One approval",
-          warning: short.has(c.id),
-        }))}
-      />
+      {categories.length === 0 && <StarterSet orgId={organisation.id} />}
+      <CategoriesView rows={categories} view={view} orgId={organisation.id} />
     </>
   );
 }

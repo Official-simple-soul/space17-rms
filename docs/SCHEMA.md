@@ -53,29 +53,20 @@ HOD and deputy are `membership_roles` grants for a department. A deputy grant ha
 
 | Table | Columns | Rules |
 |---|---|---|
-| `categories` | org_id, name, code, applies_to, requires_accounting, template_id?, workflow_id?, archived_at? | applies_to: request, expense, both |
-| `category_departments` | org_id, category_id, department_id | no rows means all departments |
-| `category_approvers` | org_id, category_id, membership_id? or role_id?, department_id? | exactly one of member or role; still needs `requests.approve` |
-| `templates` | org_id, kind, name, current_version_id?, archived_at? | kind: request, expense_report, narrative_report |
-| `template_versions` | org_id, template_id, version, fields jsonb, published_by, published_at | immutable once published |
-| `workflows` | org_id, subject, name, current_version_id?, archived_at? | subject: request, report |
-| `workflow_versions` | org_id, workflow_id, version, published_by, published_at | immutable once published |
-| `workflow_steps` | org_id, workflow_version_id, position, name, approver_type, role_id?, membership_id?, min_amount_minor?, required_approvals (1) | approver_type: category_approvers, role, member; unique position |
+| `categories` | org_id, name, archived_at? | optional labels for grouping spending; names unique per organisation, ignoring case |
 | `number_sequences` | org_id, document_type, prefix, reset, digits | reset: never, year, month; created with the organisation |
 | `number_counters` | org_id, document_type, period_key, last_value | private; row locked when issuing a number |
 
-A category without a workflow uses one `category_approvers` step with one approval. At least one step of a workflow applies to every amount. Publishing checks the version the editor loaded, so an outdated page cannot overwrite a newer one.
-
-Category approvers are people whose `requests.approve` covers the organisation or the request's department, plus those with category scope who are assigned to the category. Assignment without the permission grants nothing. The setup check needs one more approver than required, in the least covered department, because nobody approves their own request.
+Approval is by department. The people who may approve a department's requests are those holding `requests.approve` for that department (HOD, deputy, Approver given for it) or for the whole organisation (org admins, as backup), minus the requester. Alerts go to the department's own approvers, and to admins only when there are none. The setup check wants at least two per department, because nobody approves their own request.
 
 ### Requests and approvals
 
 | Table | Columns | Rules |
 |---|---|---|
-| `requests` | org_id, number?, requester_id, department_id, category_id, template_version_id?, title, purpose, form_data jsonb, total_minor, approved_minor?, needed_by?, status, submitted_at?, closed_at?, lock_version | number assigned on submission |
+| `requests` | org_id, number?, requester_id, department_id, category_id?, title, purpose, preferred_supplier, total_minor, approved_minor?, needed_by?, status, submitted_at?, closed_at?, lock_version | number assigned on submission |
 | `request_items` | org_id, request_id, position, description, quantity, unit_price_minor, line_total_minor, approved_minor? | total recalculated on the server |
-| `approval_runs` | org_id, request_id? or report_id?, workflow_version_id?, run_no, status, snapshot jsonb | exactly one subject; new run on resubmission; one active run |
-| `approval_steps` | org_id, run_id, position, rule jsonb, required_approvals, status | copied from the workflow at submission |
+| `approval_runs` | org_id, request_id? or report_id?, run_no, status, snapshot jsonb | exactly one subject; new run on resubmission; one active run |
+| `approval_steps` | org_id, run_id, position, name, approver_type, role_id?, membership_id?, required_approvals, status | one `department` step with one approval; `member` after an admin reassigns; older types kept for history |
 | `approval_actions` | org_id, step_id, membership_id, action, comment?, approved_minor? | append-only; one decision per person per step |
 
 Eligible approvers are calculated each time rather than stored, so leavers lose their say at once; submission fails if a step has too few. A holder of `config.manage` can reassign a step, with a reason. Requests and their children have no direct client access: all reads and writes go through functions. Files use a private bucket and short-lived signed links, and the server checks their content before they count.
@@ -87,7 +78,7 @@ Comments are mandatory for return, reject and amount reductions. Amount changes 
 | Table | Columns | Rules |
 |---|---|---|
 | `report_periods` | org_id, month, due_date, status, closed_by?, closed_at? | unique (org, month); open, closed |
-| `reports` | org_id, number?, kind, period_id, department_id, template_version_id?, form_data jsonb, status, submitted_by?, submitted_at?, lock_version | unique (kind, period, department); number assigned on submission; uses the oldest active expense report template |
+| `reports` | org_id, number?, kind, period_id, department_id, summary, status, submitted_by?, submitted_at?, lock_version | unique (kind, period, department); number assigned on submission; created when the first expense is accepted |
 | `expense_lines` | org_id, entered_by, department_id?, category_id?, request_id?, report_id?, expense_date?, description, seller_name, seller_location?, seller_phone?, total_minor, funding, paid_by_membership_id?, no_receipt, no_receipt_reason?, status, accepted_by?, lock_version | funding: department, personal; paid_by is the enterer for personal; report_id set only while accepted or locked |
 | `expense_items` | org_id, expense_line_id, position, description, quantity, unit_price_minor, line_total_minor | total recalculated on the server |
 | `expense_events`, `report_events` | actor_id, type, body? | append-only history |
@@ -192,7 +183,7 @@ RLS is enabled on every table and denies by default.
 | Table group | Read | Write |
 |---|---|---|
 | Organisation and departments | Members | Config permission |
-| Roles, templates, workflows | Members | Config permission |
+| Roles, categories | Members | Config permission |
 | Memberships and invitations | Members see names and departments; admins see all | Functions only |
 | Requests and children | Own, department, assigned category or org scope | Requester while draft/returned; functions otherwise |
 | Expense lines | Own, department or org scope | Enterer while draft/returned; functions otherwise |

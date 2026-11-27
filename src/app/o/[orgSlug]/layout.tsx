@@ -61,7 +61,7 @@ export default async function OrganisationLayout({
     items.push({ href: `${base}/departments`, label: "Departments", icon: "departments" });
   if (opens(can, "roles")) items.push({ href: `${base}/roles`, label: "Roles", icon: "roles" });
   if (opens(can, "configuration"))
-    items.push({ href: `${base}/configuration`, label: "Configuration", icon: "configuration" });
+    items.push({ href: `${base}/configuration`, label: "Categories", icon: "configuration" });
   if (opens(can, "settings"))
     items.push({ href: `${base}/settings`, label: "Settings", icon: "settings" });
   if (opens(can, "audit")) items.push({ href: `${base}/audit`, label: "Audit log", icon: "audit" });

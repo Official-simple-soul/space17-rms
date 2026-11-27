@@ -12,7 +12,6 @@ import {
   CommentForm,
   DecisionPanel,
   DeleteDraft,
-  ReassignButton,
   WithdrawButton,
 } from "@/features/requests/components/request-actions";
 import {
@@ -22,7 +21,6 @@ import {
 } from "@/features/requests/components/request-details";
 import { StatusBadge } from "@/features/requests/components/status-badge";
 import { getMyWork, getRequest } from "@/features/requests/repository";
-import { listApprovers } from "@/features/workflows/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
 import { formatDate, formatMoney, todayIn } from "@/lib/format";
 
@@ -40,8 +38,6 @@ export default async function RequestPage({
   ]);
   if (!request) notFound();
   const base = `/o/${orgSlug}/requests`;
-  const reassignable = request.active_step && can("config.manage");
-  const approvers = reassignable ? await listApprovers(organisation.id, "requests.approve") : [];
   const expenses = await listRequestExpenses(request.id);
   const spendable =
     request.is_requester &&
@@ -147,12 +143,7 @@ export default async function RequestPage({
           )}
           {request.steps.length > 0 && (
             <Card className="space-y-5 p-6">
-              <div className="flex items-center justify-between gap-2">
-                <h2 className="font-semibold">Approval</h2>
-                {reassignable && (
-                  <ReassignButton stepId={request.active_step!} people={approvers} />
-                )}
-              </div>
+              <h2 className="font-semibold">Approval</h2>
               <ApprovalSteps steps={request.steps} />
             </Card>
           )}

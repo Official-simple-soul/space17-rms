@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { evidence, expenseFlags, expenseStatus, funding } from "@/features/expenses/schema";
 import { attachment } from "@/features/files/schema";
-import { templateFields } from "@/features/templates/schema";
 
 export const STATUSES = {
   draft: "In progress",
@@ -27,8 +26,7 @@ export const reportDetail = z.object({
   currency: z.string(),
   submitted_by: z.string().nullable(),
   submitted_at: z.string().nullable(),
-  fields: templateFields,
-  form_data: z.record(z.string(), z.unknown()),
+  summary: z.string(),
   lines: z.array(
     z.object({
       id: z.uuid(),
@@ -62,6 +60,6 @@ export type ReportDetail = z.infer<typeof reportDetail>;
 export const draftSchema = z.object({
   id: z.uuid(),
   lock: z.number().int(),
-  form: z.record(z.string(), z.union([z.string().max(5000), z.number(), z.boolean()])),
+  summary: z.string().max(5000),
 });
 export type Draft = z.infer<typeof draftSchema>;

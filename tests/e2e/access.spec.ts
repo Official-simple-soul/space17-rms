@@ -25,8 +25,8 @@ test("people only reach what their role allows, and photos work from a phone", a
   await enrol(page);
   await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(`${base}/configuration`);
-  await page.getByRole("button", { name: "Add starter set" }).click();
-  await expect(page.getByRole("row", { name: /Office supplies/ })).toBeVisible();
+  await page.getByRole("button", { name: "Add these" }).click();
+  await expect(page.getByRole("row", { name: /Supplies/ })).toBeVisible();
 
   const insert = async (table: string, row: object) => {
     const { data, error } = await admin.from(table).insert(row).select().single();
@@ -82,9 +82,9 @@ test("people only reach what their role allows, and photos work from a phone", a
   await phone.setViewportSize({ width: 390, height: 844 });
 
   await phone.goto(`${base}/requests/new`);
-  await phone.getByLabel("Category").selectOption({ label: "Office supplies" });
+  await phone.getByLabel("What do you need?").fill("New pot");
+  await expect(phone).toHaveURL(/new\?draft=/);
   await expect(phone.getByText("Hidden department")).toHaveCount(0);
-  await expect(phone.getByLabel("Preferred supplier")).toBeVisible();
   const upload = { name: "image.png", mimeType: "image/png", buffer: photo };
   await phone.locator('input[capture="environment"]').first().setInputFiles(upload);
   await expect(phone.getByRole("button", { name: "Remove image.png" })).toBeVisible();

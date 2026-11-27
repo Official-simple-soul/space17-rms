@@ -6,7 +6,6 @@ import { archiveRole, saveRole } from "../actions";
 
 const SCOPES: Record<string, string> = {
   own: "Own items",
-  category: "Assigned categories",
   department: "Their department",
   org: "Whole organisation",
 };

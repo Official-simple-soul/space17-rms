@@ -27,12 +27,7 @@ export default async function ReportsPage({
     <>
       <PageHeader title="Reports" description="Monthly expense reports by department." />
       {months.length > 0 ? (
-        <ReportMonths
-          orgId={organisation.id}
-          slug={orgSlug}
-          months={months}
-          currency={details.currency}
-        />
+        <ReportMonths slug={orgSlug} months={months} currency={details.currency} />
       ) : (
         <div className="mb-6">
           <Notice>

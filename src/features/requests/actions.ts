@@ -10,7 +10,6 @@ import { redirectWith } from "@/lib/flash";
 import { deleteFiles } from "@/lib/files/storage";
 import { parseSaved, readJson } from "@/lib/rpc-json";
 import { createClient } from "@/lib/supabase/server";
-import { previewSteps } from "./repository";
 import { draftSchema, type Draft } from "./schema";
 
 const slug = z.string().regex(/^[a-z0-9-]+$/);
@@ -19,13 +18,7 @@ const reason = z.string().trim().min(5, "Give a reason of at least 5 characters.
 const refresh = () => revalidatePath("/o/[orgSlug]", "layout");
 
 type SaveResult =
-  | {
-      ok: true;
-      id: string;
-      version: number;
-      steps: { name: string; who: string; required: number }[];
-    }
-  | { ok: false; message: string; stale: boolean };
+  { ok: true; id: string; version: number } | { ok: false; message: string; stale: boolean };
 
 export async function saveDraft(input: Draft): Promise<SaveResult> {
   const parsed = draftSchema.safeParse(input);
@@ -41,12 +34,12 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
   ).rpc("save_request", {
     p_org: v.orgId,
     p_id: v.id as string,
-    p_category: v.categoryId,
     p_department: v.departmentId as string,
+    p_category: v.categoryId as string,
     p_title: v.title,
     p_purpose: v.purpose,
     p_needed_by: v.neededBy as string,
-    p_form: v.form,
+    p_supplier: v.supplier,
     p_items: v.items,
     p_lock: v.lock as number,
   });
@@ -56,29 +49,19 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
       message: failure(error).message!,
       stale: ["stale_request", "request_locked", "not_found"].includes(error.message),
     };
-  const total = v.items.reduce((sum, i) => sum + Math.round(i.quantity * i.unit_price_minor), 0);
-  return {
-    ok: true,
-    ...parseSaved(data),
-    steps: await previewSteps(v.categoryId, total),
-  };
+  return { ok: true, ...parseSaved(data) };
 }
 
 export async function submitRequest(
   id: string,
   version: number,
-): Promise<{ ok: boolean; message?: string; templateChanged?: boolean }> {
+): Promise<{ ok: boolean; message?: string }> {
   if (!z.uuid().safeParse(id).success || !Number.isInteger(version))
     return { ok: false, message: "Something went wrong. Please try again." };
   const { error } = await (
     await createClient()
   ).rpc("submit_request", { p_id: id, p_lock: version });
-  if (error)
-    return {
-      ok: false,
-      message: failure(error).message,
-      templateChanged: error.message === "template_changed",
-    };
+  if (error) return { ok: false, message: failure(error).message };
   deliverSoon();
   refresh();
   return { ok: true };
@@ -152,24 +135,6 @@ export async function decideRequest(_: ActionState, form: FormData): Promise<Act
       v.decision
     ],
   };
-}
-
-export async function reassignStep(_: ActionState, form: FormData): Promise<ActionState> {
-  const input = z
-    .object({ stepId: z.uuid(), memberId: z.uuid("Choose a person."), reason })
-    .safeParse(Object.fromEntries(form));
-  if (!input.success) return invalid(input.error);
-  const { error } = await (
-    await createClient()
-  ).rpc("reassign_step", {
-    p_step: input.data.stepId,
-    p_membership: input.data.memberId,
-    p_reason: input.data.reason,
-  });
-  if (error) return failure(error);
-  deliverSoon();
-  refresh();
-  return { ok: true, message: "Approval reassigned." };
 }
 
 export async function addComment(_: ActionState, form: FormData): Promise<ActionState> {

@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronDown, UserCheck, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -9,96 +10,100 @@ import { announceProblem, SavePanel } from "@/components/ui/save-panel";
 import { Card } from "@/components/ui/surface";
 import { FileUploader } from "@/features/files/components/file-uploader";
 import type { UploadInput } from "@/features/files/schema";
-import { fromAnswers, toAnswers } from "@/features/templates/answers";
-import { TemplateFields } from "@/features/templates/components/template-fields";
 import { formatMoney } from "@/lib/format";
-import { fromItemDrafts, lineTotal, toItemDrafts } from "@/lib/line-items";
+import {
+  blankItem,
+  fromItemDrafts,
+  lineTotal,
+  toItemDrafts,
+  type ItemDraft,
+} from "@/lib/line-items";
+import { uid } from "@/lib/uid";
 import { useAutosave } from "@/lib/use-autosave";
 import { saveDraft, startUpload, submitRequest } from "../actions";
 import { checkDraft, type DraftErrors } from "../form";
-import type { Draft, RequestDetail } from "../schema";
+import type { Draft, RequestDetail, RequestOptions } from "../schema";
 
-type Option = { id: string; name: string };
-type Step = { name: string; who: string; required: number };
 type Props = {
   orgId: string;
   base: string;
   currency: string;
   /** Null until the first save of a new request. */
   request: RequestDetail | null;
-  categories: (Option & { departments: string[] })[];
-  departments: Option[];
-  initialSteps: Step[];
+  options: RequestOptions;
 };
 
-export function RequestEditor({
-  orgId,
-  base,
-  currency,
-  request,
-  categories,
-  departments,
-  initialSteps,
-}: Props) {
+const SINGLE = "single";
+
+/** One amount is enough for most requests; a breakdown is there for those who want it. */
+function startingItems(request: RequestDetail | null) {
+  const items = toItemDrafts(request?.items ?? []);
+  const single = items.length === 0 || (items.length === 1 && Number(items[0].quantity) === 1);
+  return { itemised: !single, items, amount: single ? (items[0]?.price ?? "") : "" };
+}
+
+function joinNames(names: string[]) {
+  if (names.length <= 2) return names.join(" or ");
+  return `${names.slice(0, 2).join(", ")} or ${names.length - 2} other${names.length > 3 ? "s" : ""}`;
+}
+
+export function RequestEditor({ orgId, base, currency, request, options }: Props) {
   const router = useRouter();
-  const fields = request?.fields ?? [];
+  const departments = options.departments;
+  const start = useState(() => startingItems(request))[0];
   const [title, setTitle] = useState(request?.title ?? "");
   const [purpose, setPurpose] = useState(request?.purpose ?? "");
-  const [categoryId, setCategoryId] = useState(request?.category.id ?? "");
-  const [departmentId, setDepartmentId] = useState(request?.department?.id ?? "");
+  const [departmentId, setDepartmentId] = useState(
+    request?.department?.id ?? (departments.length === 1 ? departments[0].id : ""),
+  );
+  const [categoryId, setCategoryId] = useState(request?.category?.id ?? "");
   const [neededBy, setNeededBy] = useState(request?.needed_by ?? "");
-  const [answers, setAnswers] = useState(() => toAnswers(fields, request?.form_data ?? {}));
+  const [supplier, setSupplier] = useState(request?.supplier ?? "");
+  const [itemised, setItemised] = useState(start.itemised);
+  const [amount, setAmount] = useState(start.amount);
+  const [list, setList] = useState<ItemDraft[]>(start.items);
   const [files, setFiles] = useState(request?.attachments ?? []);
-  const [items, setItems] = useState(() => toItemDrafts(request?.items ?? []));
-  const [steps, setSteps] = useState(initialSteps);
+  const [saved, setSaved] = useState(Boolean(request));
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // With one amount, the request itself is the only item.
+  const items: ItemDraft[] = itemised
+    ? list
+    : amount.trim()
+      ? [{ key: SINGLE, description: title.trim(), quantity: "1", price: amount }]
+      : [];
   const content: Omit<Draft, "lock" | "id"> = {
     orgId,
-    categoryId,
     departmentId: departmentId || null,
+    categoryId: categoryId || null,
     title,
     purpose,
     neededBy: neededBy || null,
-    form: fromAnswers(fields, answers),
+    supplier,
     items: fromItemDrafts(items),
   };
   const id = useRef(request?.id ?? null);
-  const category = useRef(request?.category.id ?? "");
   const { save, status, dirty, problem, setProblem, version } = useAutosave({
     content,
     version: request?.lock_version ?? null,
-    // A request can't be stored without a category.
-    paused: submitting || !categoryId,
+    // Nothing is stored until there is something to keep.
+    paused: submitting || (!saved && !title.trim()),
     persist: (draft, lock) => saveDraft({ ...draft, id: id.current, lock }),
-    onSaved: (result, draft) => {
-      setSteps(result.steps);
-      if (!id.current) {
-        id.current = result.id;
-        // Brings up the category's questions, and reloading now returns to this draft. It stays on
-        // the same page, so what has been typed is kept.
-        router.replace(`${base}/new?draft=${result.id}`, { scroll: false });
-      } else if (draft.categoryId !== category.current) {
-        // A new category may ask different questions.
-        router.refresh();
-      }
-      category.current = draft.categoryId;
+    onSaved: (result) => {
+      if (id.current) return;
+      id.current = result.id;
+      setSaved(true);
+      // Reloading now returns to this draft; staying on the page keeps what has been typed.
+      router.replace(`${base}/new?draft=${result.id}`, { scroll: false });
     },
   });
 
-  const found = checkDraft({
-    title,
-    purpose,
-    categoryId,
-    departmentId,
-    items,
-    fields,
-    answers,
-    files: files.map((f) => f.field_key),
-  });
+  const found = checkDraft({ title, purpose, departmentId, items, itemised });
   // After the first attempt, each error clears as soon as it is corrected.
   const errors: DraftErrors | null = checked ? found : null;
+  const department = departments.find((d) => d.id === departmentId);
+  const nobody = department && department.approvers.length === 0;
 
   async function submit() {
     setChecked(true);
@@ -107,37 +112,52 @@ export function RequestEditor({
     setProblem("");
     try {
       if (!(await save())) return;
-      // The chosen category's questions may not have appeared yet.
-      if (request?.category.id !== categoryId) {
-        setProblem("Check the questions for this category, then submit.");
-        return;
-      }
       const result = await submitRequest(id.current!, version.current!);
       if (result.ok) {
-        toast.success("Request submitted.");
+        toast.success("Request sent.");
         router.push(`${base}/${id.current}`);
       } else {
         setProblem(result.message ?? "Something went wrong. Please try again.");
-        // Saving again picks up the current questions if the form changed meanwhile.
-        if (result.templateChanged) {
-          await save(true);
-          setProblem(result.message ?? "");
-        }
         router.refresh();
       }
     } catch {
-      setProblem("The request wasn't submitted. Check your connection and try again.");
+      setProblem("The request wasn't sent. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
   }
 
-  const allowed = categories.find((c) => c.id === categoryId)?.departments ?? [];
-  const choices = departments.filter((d) => allowed.includes(d.id));
+  function listSeparately() {
+    // Starts with one row, carrying over what was typed.
+    setList(
+      items.length
+        ? items.map((i) => ({ ...i, key: uid() }))
+        : [{ ...blankItem(), description: title.trim() }],
+    );
+    setItemised(true);
+  }
+
+  function useOneAmount() {
+    const total = list.reduce((sum, i) => sum + lineTotal(i), 0);
+    setAmount(total ? (total / 100).toFixed(2) : "");
+    setItemised(false);
+  }
+
   const total = items.reduce((sum, i) => sum + lineTotal(i), 0);
   const upload = (field: string | null, file: UploadInput) =>
     startUpload({ ...file, requestId: id.current!, field });
-  const list = (message?: string) => (message ? [message] : undefined);
+  // Files need a draft to belong to, so the first one saves it.
+  const beforeUpload = async () => (title.trim() ? save() : false);
+  const one = (message?: string) => (message ? [message] : undefined);
+  const extrasUsed = Boolean(categoryId || neededBy || supplier || files.some((f) => f.field_key));
+
+  if (!departments.length && !request)
+    return (
+      <Card className="p-6 text-sm">
+        You&apos;re not in a department yet, so you can&apos;t ask for anything. Ask an admin to add
+        you to one.
+      </Card>
+    );
 
   return (
     <form
@@ -150,130 +170,163 @@ export function RequestEditor({
     >
       <div className="space-y-6">
         <Card className="space-y-5 p-6">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <SelectField
-              label="Category"
-              name="category"
-              value={categoryId}
-              onChange={(e) => {
-                const next = categories.find((c) => c.id === e.target.value);
-                setCategoryId(e.target.value);
-                if (next && !next.departments.includes(departmentId))
-                  setDepartmentId(next.departments.length === 1 ? next.departments[0] : "");
-                // Straight away, to bring up this category's questions and approvers.
-                if (next) setTimeout(() => void save());
-              }}
-              hint={categoryId ? undefined : "Your draft is saved once you choose one."}
-              errors={list(errors?.category)}
-            >
-              {!categoryId && <option value="">Choose a category</option>}
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-              {request && !categories.some((c) => c.id === request.category.id) && (
-                <option value={request.category.id}>
-                  {request.category.name} (no longer available)
-                </option>
+          <TextField
+            label="What do you need?"
+            name="title"
+            maxLength={120}
+            placeholder="For example, rice for the kitchen"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            errors={one(errors?.title)}
+          />
+          <TextArea
+            label="Why do you need it?"
+            name="purpose"
+            maxLength={2000}
+            className="min-h-20"
+            value={purpose}
+            onChange={(e) => setPurpose(e.target.value)}
+            errors={one(errors?.purpose)}
+          />
+          {itemised ? (
+            <div className="space-y-3">
+              <p className="text-sm font-medium">What will it cost?</p>
+              <ItemFields
+                items={list}
+                onChange={setList}
+                errors={errors?.items}
+                currency={currency}
+              />
+              {errors?.amount && (
+                <p role="alert" className="text-brand-strong text-xs font-medium">
+                  {errors.amount}
+                </p>
               )}
-            </SelectField>
+              {list.length <= 1 && (
+                <button
+                  type="button"
+                  onClick={useOneAmount}
+                  className="text-sm font-medium underline"
+                >
+                  Use one amount instead
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <TextField
+                label="How much will it cost?"
+                name="amount"
+                inputMode="decimal"
+                placeholder="For example, 25,000"
+                hint="Your best guess is fine."
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                errors={one(errors?.amount)}
+              />
+              <button type="button" onClick={listSeparately} className="text-sm underline">
+                List items separately
+              </button>
+            </div>
+          )}
+          {departments.length > 1 && (
             <SelectField
-              label="Department"
+              label="Which department is this for?"
               name="department"
-              value={choices.some((d) => d.id === departmentId) ? departmentId : ""}
+              value={departmentId}
               onChange={(e) => setDepartmentId(e.target.value)}
-              errors={list(errors?.department)}
+              errors={one(errors?.department)}
             >
               <option value="">Choose a department</option>
-              {choices.map((d) => (
+              {departments.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
                 </option>
               ))}
             </SelectField>
-          </div>
-          <TextField
-            label="Title"
-            name="title"
-            maxLength={120}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            errors={list(errors?.title)}
-          />
-          <TextArea
-            label="Purpose"
-            name="purpose"
-            maxLength={2000}
-            hint="What it's for and why it's needed."
-            value={purpose}
-            onChange={(e) => setPurpose(e.target.value)}
-            errors={list(errors?.purpose)}
-          />
-          <div className="grid gap-5 sm:grid-cols-2">
-            <TextField
-              label="Needed by (optional)"
-              name="neededBy"
-              type="date"
-              value={neededBy}
-              onChange={(e) => setNeededBy(e.target.value)}
-            />
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="font-semibold">Items</h2>
-          <p className="text-muted mt-1 mb-4 text-sm">Leave empty if no money is needed.</p>
-          <ItemFields
-            items={items}
-            onChange={setItems}
-            errors={errors?.items}
-            currency={currency}
-          />
-        </Card>
-
-        {fields.length > 0 && (
-          <Card className="p-6">
-            <h2 className="mb-5 font-semibold">More details</h2>
-            <TemplateFields
-              fields={fields}
-              controls={{
-                values: answers,
-                errors: errors?.answers ?? {},
-                onChange: (key, value) => setAnswers((all) => ({ ...all, [key]: value })),
-                renderFile: (f) => (
-                  <FileUploader
-                    start={(file) => upload(f.key, file)}
-                    field={f.key}
-                    label="Add file"
-                    files={files}
-                    onChange={setFiles}
-                    before={save}
-                  />
-                ),
-              }}
-            />
-          </Card>
-        )}
-
-        <Card className="p-6">
-          <h2 className="font-semibold">Attachments (optional)</h2>
-          <p className="text-muted mt-1 mb-4 text-sm">
-            Anything else that supports your request, such as a photo of a damaged item, a letter or
-            an event programme.
-          </p>
-          {categoryId ? (
-            <FileUploader
-              start={(file) => upload(null, file)}
-              label="Add files"
-              files={files}
-              onChange={setFiles}
-              before={save}
-            />
-          ) : (
-            <p className="text-sm">Choose a category first, then add files.</p>
           )}
         </Card>
+
+        <Card className="p-6">
+          <h2 className="font-semibold">Add a photo (optional)</h2>
+          <p className="text-muted mt-1 mb-4 text-sm">
+            Anything that helps, such as a photo of what is broken or a list.
+          </p>
+          <FileUploader
+            start={(file) => upload(null, file)}
+            label="Add photo or file"
+            files={files}
+            onChange={setFiles}
+            before={beforeUpload}
+          />
+          {!title.trim() && (
+            <p className="text-muted mt-2 text-xs">Say what you need first, then add files.</p>
+          )}
+        </Card>
+
+        <details open={extrasUsed} className="group">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium [&::-webkit-details-marker]:hidden">
+            <ChevronDown
+              className="size-4 transition-transform group-open:rotate-180"
+              aria-hidden
+            />
+            More options
+          </summary>
+          <Card className="mt-4 space-y-5 p-6">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <TextField
+                label="Needed by"
+                name="neededBy"
+                type="date"
+                value={neededBy}
+                onChange={(e) => setNeededBy(e.target.value)}
+              />
+              {options.categories.length > 0 && (
+                <SelectField
+                  label="Category"
+                  name="category"
+                  value={categoryId}
+                  onChange={(e) => setCategoryId(e.target.value)}
+                >
+                  <option value="">None</option>
+                  {options.categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                  {request?.category &&
+                    !options.categories.some((c) => c.id === request.category!.id) && (
+                      <option value={request.category.id}>
+                        {request.category.name} (no longer used)
+                      </option>
+                    )}
+                </SelectField>
+              )}
+            </div>
+            <TextField
+              label="Where to buy it"
+              name="supplier"
+              maxLength={120}
+              hint="A shop or seller, if you have one in mind."
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
+            />
+            <div>
+              <p className="text-sm font-medium">Quotation</p>
+              <p className="text-muted mt-1 mb-3 text-xs">
+                The seller&apos;s price, such as a quote or proforma invoice. A photo is fine.
+              </p>
+              <FileUploader
+                start={(file) => upload("quotation", file)}
+                field="quotation"
+                label="Add quotation"
+                files={files}
+                onChange={setFiles}
+                before={beforeUpload}
+              />
+            </div>
+          </Card>
+        </details>
       </div>
 
       <Card className="space-y-5 p-6 lg:sticky lg:top-6">
@@ -283,29 +336,24 @@ export function RequestEditor({
             {formatMoney(total, currency)}
           </p>
         </div>
-        <div>
-          <h2 className="text-sm font-semibold">Approval</h2>
-          {!categoryId && (
-            <p className="text-muted mt-2 text-sm">Choose a category to see who approves.</p>
-          )}
-          <ol aria-label="Expected approval steps" className="mt-3 space-y-3">
-            {steps.map((s, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-neutral-100 text-xs font-semibold">
-                  {i + 1}
-                </span>
-                <span>
-                  <span className="font-medium">{s.name}</span>
-                  <span className="text-muted block text-xs">
-                    {s.who} · {s.required} needed
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
-        </div>
+        {department &&
+          (nobody ? (
+            <p className="text-brand-strong flex gap-2 text-sm">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              No one can approve requests for {department.name} yet. Ask an admin to choose a head
+              for it.
+            </p>
+          ) : (
+            <p className="flex gap-2 text-sm">
+              <UserCheck className="text-muted mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>
+                <span className="font-medium">{joinNames(department.approvers)}</span> will approve
+                this.
+              </span>
+            </p>
+          ))}
         <SavePanel
-          submit="Submit request"
+          submit="Send request"
           submitting={submitting}
           problem={problem || (errors ? "Check the highlighted answers." : "")}
           status={status}

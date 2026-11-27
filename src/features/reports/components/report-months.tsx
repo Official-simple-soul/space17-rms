@@ -1,22 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { ActionForm } from "@/components/ui/action-form";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/surface";
 import { formatDate, formatMoney, formatMonth } from "@/lib/format";
-import { openReport } from "../actions";
 import type { ReportMonth } from "../repository";
 import { ReportStatusBadge } from "./report-status";
 
 /** The months a head of department is responsible for now. */
 export function ReportMonths({
-  orgId,
   slug,
   months,
   currency,
 }: {
-  orgId: string;
   slug: string;
   months: ReportMonth[];
   currency: string;
@@ -49,23 +45,17 @@ export function ReportMonths({
                 >
                   Open report
                 </Link>
-              ) : (
-                <ActionForm
-                  action={openReport}
-                  submit="Start report"
-                  variant="outline"
-                  size="sm"
-                  className="space-y-2"
+              ) : m.waiting > 0 ? (
+                <Link
+                  href={`/o/${slug}/expenses?tab=inbox`}
+                  className={buttonStyles({ variant: "outline", size: "sm" })}
                 >
-                  {() => (
-                    <>
-                      <input type="hidden" name="orgId" value={orgId} />
-                      <input type="hidden" name="slug" value={slug} />
-                      <input type="hidden" name="departmentId" value={m.departmentId} />
-                      <input type="hidden" name="month" value={m.month} />
-                    </>
-                  )}
-                </ActionForm>
+                  Review {m.waiting} waiting
+                </Link>
+              ) : (
+                <p className="text-muted text-sm">
+                  Starts by itself when you accept the first expense.
+                </p>
               )}
             </div>
           </Card>

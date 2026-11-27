@@ -12,7 +12,7 @@ import { ReportEditor } from "@/features/reports/components/report-editor";
 import { ReportStatusBadge } from "@/features/reports/components/report-status";
 import { getReport } from "@/features/reports/repository";
 import { getMyWork } from "@/features/requests/repository";
-import { TemplateAnswers } from "@/features/templates/components/template-answers";
+import { Files } from "@/features/files/components/files";
 import { getOrganisationContext } from "@/lib/auth/session";
 import { formatDate, formatMonth } from "@/lib/format";
 
@@ -56,17 +56,17 @@ export default async function ReportPage({ params }: PageProps<"/o/[orgSlug]/rep
               base={base}
             />
           ) : (
-            report.fields.length > 0 && (
-              <Card className="p-6">
-                <dl className="space-y-5">
-                  <TemplateAnswers
-                    fields={report.fields}
-                    data={report.form_data}
-                    files={report.attachments}
-                    filesBase={`${base}/files`}
-                    currency={report.currency}
-                  />
-                </dl>
+            (report.summary || report.attachments.length > 0) && (
+              <Card className="space-y-4 p-6">
+                {report.summary && (
+                  <div>
+                    <h2 className="text-sm font-semibold">Notes for Finance</h2>
+                    <p className="mt-1 text-sm whitespace-pre-line">{report.summary}</p>
+                  </div>
+                )}
+                {report.attachments.length > 0 && (
+                  <Files files={report.attachments} base={`${base}/files`} />
+                )}
               </Card>
             )
           )}

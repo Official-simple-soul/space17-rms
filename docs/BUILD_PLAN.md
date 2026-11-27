@@ -70,8 +70,8 @@ Sizes are relative: S, M, L.
 | Roles and permission grid | L | Scopes enforced in the database; last admin protected |
 | Staff invite, CSV and join code | L | No auth user exists before join approval |
 | Offboarding | M | Access ends immediately; pending work is reassigned |
-| Categories, templates, numbering | L | Published versions are immutable; concurrent numbers are unique |
-| Workflow editor | M | Sample amount shows the correct steps |
+| Categories, templates, numbering | L | Published versions are immutable; concurrent numbers are unique (templates later removed) |
+| Workflow editor | M | Sample amount shows the correct steps (later removed) |
 | Setup wizard and checklist | M | Warns about missing approvers or payers |
 
 ### M3: Requests, approvals and payments
@@ -84,6 +84,16 @@ Sizes are relative: S, M, L.
 | Payment queue and confirmation | L | Part payment works; overpayment and self-payment fail |
 | Bank detail protection | M | Encrypted; each reveal is audited |
 | In-app and email notifications | M | Emails retry without duplicates |
+
+### Simplification (27 November 2026)
+
+| Task | Size | Accepted when |
+|---|---|---|
+| Department approval | L | HOD, deputy, department approver or admin approves; no setup needed; nobody approves their own |
+| Remove workflows, templates, category approvers | M | Categories are labels; old data migrates; database tests pass |
+| Plain request form | M | What, why, how much, photo; says who approves; warns early |
+| Reports start by themselves | S | No Start report; heads Send to Finance; admins are backup reviewers |
+| Shorter setup checklist | S | Departments, people, heads, payers |
 
 ### M4: Expenses, reports and receipts
 

@@ -62,9 +62,13 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
       .insert({ org_id: org, user_id: user.data.user!.id })
       .select("id")
       .single();
-    await admin
-      .from("membership_roles")
-      .insert({ org_id: org, membership_id: member.data!.id, role_id: await roleId(roleKey) });
+    await admin.from("membership_roles").insert({
+      org_id: org,
+      membership_id: member.data!.id,
+      role_id: await roleId(roleKey),
+      // Approvers are given for a department.
+      department_id: roleKey === "approver" ? dept : null,
+    });
     await admin
       .from("department_members")
       .insert({ org_id: org, department_id: dept, membership_id: member.data!.id });
@@ -76,24 +80,17 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   const staffUser = await add("Tunde", "staff");
   const finance = await add("Femi", "finance");
   const category = (
-    await admin
-      .from("categories")
-      .insert({ org_id: org, name: "Supplies", code: "SUP" })
-      .select("id")
-      .single()
+    await admin.from("categories").insert({ org_id: org, name: "Supplies" }).select("id").single()
   ).data!.id as string;
-  await admin
-    .from("category_approvers")
-    .insert({ org_id: org, category_id: category, role_id: await roleId("approver") });
   const saved = await staffUser.client.rpc("save_request", {
     p_org: org,
     p_id: null,
-    p_category: category,
     p_department: dept,
+    p_category: category,
     p_title: "Printer paper",
     p_purpose: "Monthly supply",
     p_needed_by: null,
-    p_form: {},
+    p_supplier: "",
     p_items: [{ description: "Paper", quantity: 1, unit_price_minor: 5_000_000 }],
     p_lock: null,
   });
@@ -172,7 +169,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await panel.getByRole("button", { name: "Record payment" }).click();
   await expect(payer.getByRole("alertdialog")).toContainText("₦20,000.00");
   await confirm(payer);
-  await expect(payer.getByText("Part paid", { exact: true }).first()).toBeVisible();
+  await expect(payer.getByText("Some money given", { exact: true }).first()).toBeVisible();
   await expect(payer.getByText(/PAY-\d{4}-0001/).first()).toBeVisible();
   await payer.locator('input[type="file"]:not([capture])').setInputFiles({
     name: "transfer.pdf",
@@ -184,7 +181,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await panel.getByRole("button", { name: "Record payment" }).click();
   await expect(payer.getByRole("alertdialog")).toContainText("₦30,000.00");
   await confirm(payer);
-  await expect(payer.getByText("Paid", { exact: true }).first()).toBeVisible();
+  await expect(payer.getByText("Money given", { exact: true }).first()).toBeVisible();
   await expect(payer.getByRole("button", { name: "Reveal number" })).toHaveCount(0);
   await payer.screenshot({
     animations: "disabled",
@@ -208,7 +205,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await expect(page.getByRole("button", { name: "I received this" })).toHaveCount(1);
   await page.getByRole("button", { name: "I received this" }).click();
   await confirm(page);
-  await expect(page.getByText("Received", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Money received", { exact: true }).first()).toBeVisible();
 
   // Void, then history.
   await payer.reload();
@@ -216,7 +213,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
   await payer.getByLabel("Reason", { exact: true }).fill("Transfer bounced");
   await payer.getByRole("button", { name: "Void payment" }).click();
   await expect(payer.getByText("Voided: Transfer bounced").first()).toBeVisible();
-  await expect(payer.getByText("Part paid", { exact: true }).first()).toBeVisible();
+  await expect(payer.getByText("Some money given", { exact: true }).first()).toBeVisible();
   await payer.goto(`${base}/payments?tab=history`);
   await expect(payer.getByText("1–2 of 2").first()).toBeVisible();
   await payer.getByLabel("Filter by status").selectOption("voided");

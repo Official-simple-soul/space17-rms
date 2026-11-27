@@ -2,14 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Notice, PageHeader } from "@/components/ui/surface";
-import { listDepartments } from "@/features/departments/repository";
 import { DeleteDraft } from "@/features/requests/components/request-actions";
 import { RequestEditor } from "@/features/requests/components/request-editor";
-import {
-  getRequest,
-  listRequestableCategories,
-  previewSteps,
-} from "@/features/requests/repository";
+import { getRequest, getRequestOptions } from "@/features/requests/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Edit request" };
@@ -24,11 +19,7 @@ export default async function EditRequestPage({
   const base = `/o/${orgSlug}/requests`;
   if (request.status !== "draft" && request.status !== "returned")
     redirect(`${base}/${request.id}`);
-  const [categories, departments, steps] = await Promise.all([
-    listRequestableCategories(organisation.id),
-    listDepartments(organisation.id),
-    previewSteps(request.category.id, request.total_minor),
-  ]);
+  const options = await getRequestOptions(organisation.id);
   const reason = request.events.find((e) => e.type === "returned");
   return (
     <>
@@ -55,9 +46,7 @@ export default async function EditRequestPage({
         base={base}
         currency={request.currency}
         request={request}
-        categories={categories}
-        departments={departments}
-        initialSteps={steps}
+        options={options}
       />
     </>
   );

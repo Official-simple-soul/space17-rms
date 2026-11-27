@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { ActionForm } from "@/components/ui/action-form";
-import { SelectField, TextArea, TextField } from "@/components/ui/field";
+import { TextArea, TextField } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { formatMoney, parseMoney } from "@/lib/format";
-import { addComment, decideRequest, deleteDraft, reassignStep, withdrawRequest } from "../actions";
+import { addComment, decideRequest, deleteDraft, withdrawRequest } from "../actions";
 import type { RequestDetail } from "../schema";
 
 type Item = RequestDetail["items"][number];
@@ -186,46 +186,6 @@ export function DeleteDraft({ id, slug }: { id: string; slug: string }) {
         </>
       )}
     </ActionForm>
-  );
-}
-
-export function ReassignButton({
-  stepId,
-  people,
-}: {
-  stepId: string;
-  people: { id: string; name: string }[];
-}) {
-  return (
-    <FormDialog
-      label="Reassign"
-      title="Reassign this approval"
-      description="Use this when the usual approvers are away. Approvals already given still count."
-      variant="outline"
-      size="sm"
-    >
-      <ActionForm action={reassignStep} submit="Reassign" closeOnSuccess>
-        {(state) => (
-          <>
-            <input type="hidden" name="stepId" value={stepId} />
-            <SelectField label="To" name="memberId" errors={state.fieldErrors?.memberId}>
-              <option value="">Choose a person</option>
-              {people.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </SelectField>
-            <TextArea
-              label="Reason"
-              name="reason"
-              maxLength={1000}
-              errors={state.fieldErrors?.reason}
-            />
-          </>
-        )}
-      </ActionForm>
-    </FormDialog>
   );
 }
 
