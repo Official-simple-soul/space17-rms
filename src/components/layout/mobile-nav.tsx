@@ -30,6 +30,7 @@ export function MobileNav({ items }: { items: NavItem[] }) {
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}
+              data-tour={`nav-${item.icon}`}
               className={cn(tab, active ? "text-brand" : "text-muted")}
             >
               <span className="relative">

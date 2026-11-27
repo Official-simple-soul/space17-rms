@@ -38,6 +38,16 @@ run(["db", "reset", "--local"]);
 const raw = run(["status", "-o", "json"]);
 const status = JSON.parse(raw.slice(raw.indexOf("{")));
 if (new URL(status.API_URL).port !== "55321") throw new Error("Refusing to test: wrong stack.");
+// Tests start with the first-visit tour already seen; the tour's own test turns it back on.
+execFileSync("docker", [
+  "exec",
+  "supabase_db_space17-rms-test",
+  "psql",
+  "-U",
+  "postgres",
+  "-qc",
+  "alter table public.memberships alter column tour_completed_at set default now()",
+]);
 
 const { status: code } = spawnSync(
   "pnpm",

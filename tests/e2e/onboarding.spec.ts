@@ -74,9 +74,17 @@ test("superadmin invites an organisation and its admin sets it up", async ({ pag
 
   const owner = await (await browser.newContext()).newPage();
   await owner.goto(link);
+  await expect(owner.getByRole("listitem").filter({ hasText: "current step" })).toContainText(
+    "Your account",
+  );
+  await owner.screenshot({ animations: "disabled", path: "test-results/invite-step-1.png" });
   await owner.getByLabel("Full name").fill("Ada Owner");
   await owner.getByLabel("Password", { exact: true }).fill(password);
   await owner.getByRole("button", { name: "Create account" }).click();
+  await expect(owner.getByRole("listitem").filter({ hasText: "current step" })).toContainText(
+    "Your organisation",
+  );
+  await owner.screenshot({ animations: "disabled", path: "test-results/invite-step-2.png" });
   await owner.getByLabel("Organisation name").fill(`Acme ${id}`);
   await owner.getByRole("button", { name: "Create organisation" }).click();
   await expect(owner.getByRole("heading", { name: "Hello, Ada" })).toBeVisible();

@@ -5,13 +5,27 @@ import { Card } from "@/components/ui/surface";
 type Step = { label: string; done: boolean; href: string };
 
 export function SetupChecklist({ steps }: { steps: Step[] }) {
+  const done = steps.filter((s) => s.done).length;
   return (
-    <Card className="mt-6">
+    <Card>
       <div className="border-line border-b p-5">
         <h2 className="font-semibold">Set up your organisation</h2>
         <p className="text-muted mt-1 text-sm">
-          {steps.filter((s) => s.done).length} of {steps.length} complete
+          {done} of {steps.length} complete
         </p>
+        <div
+          role="progressbar"
+          aria-label="Setup progress"
+          aria-valuemin={0}
+          aria-valuemax={steps.length}
+          aria-valuenow={done}
+          className="bg-ink/[0.07] mt-3 h-1.5 overflow-hidden rounded-full"
+        >
+          <div
+            className="from-ink to-brand animate-grow h-full origin-left rounded-full bg-gradient-to-r"
+            style={{ width: `${(done / steps.length) * 100}%` }}
+          />
+        </div>
       </div>
       <ol className="divide-line divide-y">
         {steps.map((step, i) => (
@@ -41,7 +55,7 @@ const SHOWN = 8;
 export function SetupWarnings({ warnings }: { warnings: { text: string; href: string }[] }) {
   if (!warnings.length) return null;
   return (
-    <Card className="mt-6">
+    <Card>
       <div className="border-line flex items-center gap-3 border-b p-5">
         <TriangleAlert className="text-brand size-5" aria-hidden />
         <h2 className="font-semibold">

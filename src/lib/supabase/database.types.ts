@@ -529,14 +529,14 @@ isOneToOne: false
                   ]
                 },"memberships": {
                   Row: {
-                    "created_at": string,"id": string,"job_title": string | null,"org_id": string,"primary_department_id": string | null,"staff_no": string | null,"status": string,"updated_at": string,"user_id": string
+                    "created_at": string,"id": string,"job_title": string | null,"org_id": string,"primary_department_id": string | null,"staff_no": string | null,"status": string,"tour_completed_at": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"id"?: string,"job_title"?: string | null,"org_id": string,"primary_department_id"?: string | null,"staff_no"?: string | null,"status"?: string,"updated_at"?: string,"user_id": string
+                    "created_at"?: string,"id"?: string,"job_title"?: string | null,"org_id": string,"primary_department_id"?: string | null,"staff_no"?: string | null,"status"?: string,"tour_completed_at"?: string | null,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"id"?: string,"job_title"?: string | null,"org_id"?: string,"primary_department_id"?: string | null,"staff_no"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"id"?: string,"job_title"?: string | null,"org_id"?: string,"primary_department_id"?: string | null,"staff_no"?: string | null,"status"?: string,"tour_completed_at"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1107,6 +1107,9 @@ isOneToOne: false
 "finish_email":
 { Args: { "p_attempt": number,"p_error"?: string,"p_id": string,"p_ok": boolean }; Returns: undefined
                            },
+"finish_tour":
+{ Args: { "p_org": string }; Returns: undefined
+                           },
 "get_attachment":
 { Args: { "p_id": string }; Returns: {
               "file_name": string,"mime": string,"storage_path": string
@@ -1365,6 +1368,9 @@ isOneToOne: false
                            },
 "submit_request":
 { Args: { "p_id": string,"p_lock": number }; Returns: Json
+                           },
+"tour_needed":
+{ Args: { "p_org": string }; Returns: boolean
                            },
 "update_organisation":
 { Args: { "p_fiscal_month": number,"p_name": string,"p_org": string,"p_timezone": string }; Returns: undefined

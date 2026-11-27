@@ -25,6 +25,34 @@
   --animate-digit: digit 0.3s var(--ease-spring) both;
   --animate-caret: caret 1s steps(1) infinite;
   --animate-shake: shake 0.4s var(--ease-out-soft);
+  --animate-grow: grow 0.7s var(--ease-out-soft) 0.15s both;
+  --animate-pop: pop 0.4s var(--ease-spring) 0.3s both;
+  --animate-halo: halo 2.2s ease-out infinite;
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.3) rotate(-20deg);
+    }
+  }
+  @keyframes halo {
+    0% {
+      box-shadow:
+        0 6px 16px -6px rgb(163 13 26 / 0.7),
+        0 0 0 0 rgb(163 13 26 / 0.35);
+    }
+    70%,
+    100% {
+      box-shadow:
+        0 6px 16px -6px rgb(163 13 26 / 0.7),
+        0 0 0 10px rgb(163 13 26 / 0);
+    }
+  }
 
   @keyframes digit {
     from {

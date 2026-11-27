@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { buttonStyles } from "@/components/ui/button";
+import { Stepper } from "@/components/ui/stepper";
 import { Notice } from "@/components/ui/surface";
 import { CreateOrganisationForm, RegisterForm } from "@/features/organisations/components/forms";
 import { findInvite } from "@/features/organisations/repository";
 import { getSession } from "@/lib/auth/session";
 
 export const metadata: Metadata = { title: "Invitation", referrer: "no-referrer" };
+
+const STEPS = ["Your account", "Your organisation"];
 
 const REASONS: Record<string, string> = {
   used: "This invitation has already been used.",
@@ -46,8 +49,8 @@ export default async function InvitePage({ params }: PageProps<"/invite/[token]"
   if (session)
     return (
       <>
-        <p className="text-brand text-sm font-medium">Step 2 of 2</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">Create your organisation</h1>
+        <Stepper steps={STEPS} current={1} />
+        <h1 className="text-3xl font-semibold tracking-tight">Create your organisation</h1>
         <p className="text-muted mt-2 mb-8">You&apos;ll be its first administrator.</p>
         <CreateOrganisationForm token={token} />
       </>
@@ -55,8 +58,8 @@ export default async function InvitePage({ params }: PageProps<"/invite/[token]"
 
   return (
     <>
-      <p className="text-brand text-sm font-medium">Step 1 of 2</p>
-      <h1 className="mt-1 text-3xl font-semibold tracking-tight">You&apos;re invited</h1>
+      <Stepper steps={STEPS} current={0} />
+      <h1 className="text-3xl font-semibold tracking-tight">You&apos;re invited</h1>
       <p className="text-muted mt-2 mb-8">
         {invite.has_account ? "Sign in to continue." : "Create your account to continue."}
       </p>

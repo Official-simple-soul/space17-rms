@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={inter.variable}>
-      <body className="relative isolate min-h-dvh antialiased">
+      {/* Browser extensions (such as ColorZilla) add attributes to <body> before React loads. */}
+      <body className="relative isolate min-h-dvh antialiased" suppressHydrationWarning>
         <Backdrop />
         {children}
         <Spotlight />

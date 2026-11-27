@@ -63,9 +63,9 @@ export function EnrolPanel({ next }: { next?: string }) {
         width={176}
         height={176}
         unoptimized
-        className="rounded-control border-line border bg-white p-2"
+        className="rounded-control border-line mx-auto block border bg-white p-2"
       />
-      <p className="text-muted text-xs">
+      <p className="text-muted text-center text-xs">
         Can&apos;t scan it? Enter this key:{" "}
         <code className="text-ink font-mono break-all">{setup.secret}</code>
       </p>
