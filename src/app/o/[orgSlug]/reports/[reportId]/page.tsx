@@ -9,6 +9,7 @@ import {
   ReportTimeline,
 } from "@/features/reports/components/report-details";
 import { ReportEditor } from "@/features/reports/components/report-editor";
+import { Adjustments } from "@/features/reports/components/adjustments";
 import { ReviewPanel } from "@/features/reports/components/report-review";
 import { ReportStatusBadge } from "@/features/reports/components/report-status";
 import { getReport } from "@/features/reports/repository";
@@ -102,6 +103,17 @@ export default async function ReportPage({ params }: PageProps<"/o/[orgSlug]/rep
                 )}
               </Card>
             )
+          )}
+          {report.status === "approved" && (report.can_adjust || report.adjustments.length > 0) && (
+            <Card className="space-y-4 p-6">
+              <div>
+                <h2 className="font-semibold">Corrections</h2>
+                {report.period_closed && (
+                  <p className="text-muted mt-1 text-sm">This month is closed.</p>
+                )}
+              </div>
+              <Adjustments report={report} />
+            </Card>
           )}
           {report.events.length > 0 && (
             <Card className="p-6">

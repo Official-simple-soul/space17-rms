@@ -11,6 +11,7 @@ import { Badge, Card, Notice } from "@/components/ui/surface";
 import { FileUploader } from "@/features/files/components/file-uploader";
 import { Files } from "@/features/files/components/files";
 import type { RequestDetail } from "@/features/requests/schema";
+import type { ActionState } from "@/lib/action-state";
 import { formatDate, formatMoney, parseMoney } from "@/lib/format";
 import {
   confirmPayment,
@@ -21,7 +22,7 @@ import {
 } from "../actions";
 import { METHODS } from "../schema";
 
-type Payment = RequestDetail["payments"][number];
+export type Payment = RequestDetail["payments"][number];
 
 function RecordForm({ request: r, today }: { request: RequestDetail; today: string }) {
   const balance = (r.approved_minor ?? 0) - r.paid_minor;
@@ -151,14 +152,27 @@ function BankDetails({ request: r }: { request: RequestDetail }) {
   );
 }
 
-function PaymentItem({
+type Action = (state: ActionState, form: FormData) => Promise<ActionState>;
+
+/** One recorded payment: who was paid, proof, and confirming or voiding it. */
+export function PaymentItem({
   payment: p,
-  request: r,
+  currency,
+  lock,
   filesBase,
+  canConfirm,
+  canVoid,
+  confirm = confirmPayment,
+  voidAction = voidPayment,
 }: {
   payment: Payment;
-  request: RequestDetail;
+  currency: string;
+  lock: number;
   filesBase: string;
+  canConfirm: boolean;
+  canVoid: boolean;
+  confirm?: Action;
+  voidAction?: Action;
 }) {
   const router = useRouter();
   const voided = p.status === "voided";
@@ -167,7 +181,7 @@ function PaymentItem({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className={`font-semibold tabular-nums ${voided ? "line-through" : ""}`}>
-            {formatMoney(p.amount_minor, r.currency)}
+            {formatMoney(p.amount_minor, currency)}
           </p>
           <p className="text-muted text-xs">
             {p.number} · {formatDate(p.paid_on)} · {METHODS[p.method]}
@@ -183,24 +197,19 @@ function PaymentItem({
       </p>
       {p.note && <p className="text-xs whitespace-pre-wrap">{p.note}</p>}
       {p.void_reason && <p className="text-brand-strong text-xs">Voided: {p.void_reason}</p>}
-      {!p.can_add_proof && p.proofs.length > 0 && <Files files={p.proofs} base={filesBase} />}
-      {p.can_add_proof && (
-        <>
-          {p.proofs.length > 0 && <Files files={p.proofs} base={filesBase} />}
-          {p.proofs.length < 5 && (
-            <FileUploader
-              label="Add proof"
-              files={[]}
-              start={(file) => startProof({ ...file, paymentId: p.id })}
-              onChange={() => router.refresh()}
-            />
-          )}
-        </>
+      {p.proofs.length > 0 && <Files files={p.proofs} base={filesBase} />}
+      {p.can_add_proof && p.proofs.length < 5 && (
+        <FileUploader
+          label="Add proof"
+          files={[]}
+          start={(file) => startProof({ ...file, paymentId: p.id })}
+          onChange={() => router.refresh()}
+        />
       )}
       <div className="flex flex-wrap gap-2">
-        {r.is_requester && !voided && !p.confirmed_at && (
+        {canConfirm && !voided && !p.confirmed_at && (
           <ActionForm
-            action={confirmPayment}
+            action={confirm}
             submit="I received this"
             variant="brand"
             size="sm"
@@ -208,13 +217,13 @@ function PaymentItem({
             closeOnSuccess
             confirm={{
               title: "Confirm this payment?",
-              description: `You're confirming ${formatMoney(p.amount_minor, r.currency)} was received.`,
+              description: `You're confirming ${formatMoney(p.amount_minor, currency)} was received.`,
             }}
           >
             {() => <input type="hidden" name="id" value={p.id} />}
           </ActionForm>
         )}
-        {r.can_void && !voided && (
+        {canVoid && !voided && (
           <FormDialog
             label="Void"
             ariaLabel={`Void ${p.number}`}
@@ -223,11 +232,11 @@ function PaymentItem({
             variant="outline"
             size="sm"
           >
-            <ActionForm action={voidPayment} submit="Void payment" variant="brand" closeOnSuccess>
+            <ActionForm action={voidAction} submit="Void payment" variant="brand" closeOnSuccess>
               {(state) => (
                 <>
                   <input type="hidden" name="id" value={p.id} />
-                  <input type="hidden" name="lock" value={r.lock_version} />
+                  <input type="hidden" name="lock" value={lock} />
                   <TextArea
                     label="Reason"
                     name="reason"
@@ -291,7 +300,15 @@ export function PaymentsCard({
       {r.payments.length > 0 && (
         <ul className="divide-line border-line divide-y border-t pt-4">
           {r.payments.map((p) => (
-            <PaymentItem key={p.id} payment={p} request={r} filesBase={filesBase} />
+            <PaymentItem
+              key={p.id}
+              payment={p}
+              currency={r.currency}
+              lock={r.lock_version}
+              filesBase={filesBase}
+              canConfirm={r.is_requester}
+              canVoid={r.can_void}
+            />
           ))}
         </ul>
       )}

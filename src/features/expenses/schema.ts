@@ -1,3 +1,4 @@
+import { paymentMethod } from "@/features/payments/schema";
 import { z } from "zod";
 import { attachment } from "@/features/files/schema";
 
@@ -16,8 +17,12 @@ export const expenseStatus = z.enum(Object.keys(STATUSES) as [ExpenseStatus, ...
 export const FUNDING = { department: "Department funds", personal: "Personal money" } as const;
 export const funding = z.enum(["department", "personal"]);
 
-export const EVIDENCE = { vendor_receipt: "Receipt", missing: "No receipt" } as const;
-export const evidence = z.enum(["vendor_receipt", "missing"]);
+export const EVIDENCE = {
+  vendor_receipt: "Receipt",
+  internal_receipt: "Our receipt",
+  missing: "No receipt",
+} as const;
+export const evidence = z.enum(["vendor_receipt", "internal_receipt", "missing"]);
 
 export const FLAGS = {
   missing_receipt: "No receipt",
@@ -100,6 +105,11 @@ export const expenseDetail = z.object({
         "withdrawn",
         "removed",
         "evidence_added",
+        "repaid",
+        "repayment_voided",
+        "repayment_confirmed",
+        "receipt_issued",
+        "receipt_voided",
       ]),
       actor: z.string(),
       body: z.string().nullable(),
@@ -110,6 +120,46 @@ export const expenseDetail = z.object({
   can_decide: z.boolean(),
   can_remove: z.boolean(),
   can_add_evidence: z.boolean(),
+  repayment: z
+    .object({
+      payee: z.string(),
+      repaid_minor: z.number(),
+      payments: z.array(
+        z.object({
+          id: z.uuid(),
+          number: z.string(),
+          payee: z.string(),
+          amount_minor: z.number(),
+          paid_on: z.string(),
+          method: paymentMethod,
+          reference: z.string().nullable(),
+          note: z.string().nullable(),
+          status: z.enum(["recorded", "voided"]),
+          recorded_by: z.string(),
+          void_reason: z.string().nullable(),
+          confirmed_at: z.string().nullable(),
+          can_add_proof: z.boolean(),
+          proofs: z.array(attachment),
+        }),
+      ),
+      can_pay: z.boolean(),
+      can_void: z.boolean(),
+      is_payee: z.boolean(),
+    })
+    .nullable(),
+  receipts: z.array(
+    z.object({
+      id: z.uuid(),
+      number: z.string(),
+      status: z.enum(["issued", "voided"]),
+      issued_by: z.string(),
+      issued_at: z.string(),
+      void_reason: z.string().nullable(),
+      verify_token: z.string(),
+    }),
+  ),
+  can_issue_receipt: z.boolean(),
+  can_void_receipt: z.boolean(),
 });
 export type ExpenseDetail = z.infer<typeof expenseDetail>;
 

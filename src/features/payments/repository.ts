@@ -61,8 +61,9 @@ export async function listPayments(orgId: string, query: Query) {
     rows: rows.map((r) => ({
       id: r.id,
       number: r.number,
-      requestId: r.request_id,
-      request: `${r.request_number} ${r.title}`,
+      // A payment is for a request, or repays an expense.
+      href: r.request_id ? `requests/${r.request_id}` : `expenses/${r.expense_id}`,
+      request: r.request_id ? `${r.request_number} ${r.title}` : `Repaid: ${r.title}`,
       payee: r.payee,
       amount: r.amount_minor,
       paidOn: r.paid_on,
@@ -70,4 +71,38 @@ export async function listPayments(orgId: string, query: Query) {
       state: r.status === "voided" ? "Voided" : r.confirmed ? "Confirmed" : "Not confirmed",
     })),
   };
+}
+
+export async function listRepayable(orgId: string, query: Query) {
+  const supabase = await createClient();
+  const department = text(query.department);
+  const { rows, server } = await loadPage(query, async (range) => {
+    const { data, error } = await supabase.rpc("list_repayable", {
+      p_org: orgId,
+      p_search: text(query.q),
+      p_department: isId(department) ? department : undefined,
+      ...range,
+    });
+    if (error) throw new Error("Could not load repayments");
+    return data;
+  });
+  return {
+    server,
+    rows: rows.map((r) => ({
+      id: r.id,
+      description: r.description,
+      payee: r.payee,
+      department: r.department,
+      total: r.total_minor,
+      balance: r.total_minor - r.repaid_minor,
+      date: r.expense_date,
+      isOwn: r.is_own,
+    })),
+  };
+}
+
+/** The masked bank details of the person to repay, for those who may repay them. */
+export async function getRepaymentAccount(lineId: string) {
+  const { data, error } = await (await createClient()).rpc("repayment_account", { p_line: lineId });
+  return error ? null : (data[0] ?? null);
 }

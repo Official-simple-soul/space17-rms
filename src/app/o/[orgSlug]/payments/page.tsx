@@ -4,8 +4,12 @@ import { PageHeader } from "@/components/ui/surface";
 import { LinkTabs } from "@/components/ui/tabs";
 import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
-import { PayableView, PaymentsView } from "@/features/payments/components/payments-view";
-import { listPayable, listPayments } from "@/features/payments/repository";
+import {
+  PayableView,
+  PaymentsView,
+  RepayableView,
+} from "@/features/payments/components/payments-view";
+import { listPayable, listPayments, listRepayable } from "@/features/payments/repository";
 import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
@@ -18,28 +22,39 @@ export default async function PaymentsPage({
   const { orgSlug } = await params;
   const query = await searchParams;
   const { session, organisation } = await requireSection(orgSlug, "payments");
-  const history = query.tab === "history";
+  const tab = query.tab === "history" || query.tab === "repay" ? query.tab : "due";
   const [details, departments, view] = await Promise.all([
     getOrganisation(organisation.id),
     listDepartments(organisation.id),
     getListView(),
   ]);
-  const shared = { view, base: `/o/${orgSlug}/requests`, currency: details.currency };
+  const shared = { view, base: `/o/${orgSlug}`, currency: details.currency };
   return (
     <>
       <MfaNotice aal={session.aal} />
-      <PageHeader title="Payments" description="Record payments for approved requests." />
+      <PageHeader
+        title="Payments"
+        description="Record money given for approved requests, and repay people who spent their own."
+      />
       <LinkTabs
         label="Payment lists"
         base={`/o/${orgSlug}/payments`}
-        current={history ? "history" : "due"}
+        current={tab}
         tabs={[
-          { id: "due", label: "Due" },
+          { id: "due", label: "Requests" },
+          { id: "repay", label: "Pay back" },
           { id: "history", label: "History" },
         ]}
       />
-      {history ? (
+      {tab === "history" ? (
         <PaymentsView key="history" {...shared} {...await listPayments(organisation.id, query)} />
+      ) : tab === "repay" ? (
+        <RepayableView
+          key="repay"
+          {...shared}
+          {...await listRepayable(organisation.id, query)}
+          departments={departments}
+        />
       ) : (
         <PayableView
           key="due"

@@ -14,9 +14,13 @@ import { ExpenseFlags, ExpenseStatusBadge } from "@/features/expenses/components
 import { ExpenseDetails, ExpenseTimeline } from "@/features/expenses/components/expense-details";
 import { getExpense } from "@/features/expenses/repository";
 import { MarkRead } from "@/features/notifications/components/mark-read";
+import { getOrganisation } from "@/features/organisations/repository";
+import { RepaymentCard } from "@/features/payments/components/repayment-card";
+import { ReceiptCard } from "@/features/receipts/components/receipt-card";
+import { getRepaymentAccount } from "@/features/payments/repository";
 import { getMyWork } from "@/features/requests/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, todayIn } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Expense" };
 
@@ -30,6 +34,10 @@ export default async function ExpensePage({
     getMyWork(organisation.id),
   ]);
   if (!expense) notFound();
+  const [bank, details] = await Promise.all([
+    expense.repayment?.can_pay ? getRepaymentAccount(expense.id) : null,
+    getOrganisation(organisation.id),
+  ]);
   const base = `/o/${orgSlug}`;
   const back = expense.can_decide ? `${base}/expenses?tab=inbox` : `${base}/expenses`;
   const editable = expense.is_mine && (expense.status === "draft" || expense.status === "returned");
@@ -82,6 +90,13 @@ export default async function ExpensePage({
               <DecideExpense expense={expense} />
             </Card>
           )}
+          <ReceiptCard expense={expense} base={base} />
+          <RepaymentCard
+            expense={expense}
+            bank={bank}
+            filesBase={`${base}/files`}
+            today={todayIn(details.timezone)}
+          />
           {expense.can_add_evidence && (
             <Card className="space-y-4 p-6">
               <h2 className="font-semibold">Add evidence</h2>

@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { admin, confirm, createOrganisation, enrol, newClient, password, signIn } from "./helpers";
 
@@ -241,6 +242,40 @@ test("staff enter expenses, the head reviews them and submits the monthly report
     path: "test-results/report-approved.png",
     fullPage: true,
   });
+
+  // Finance issues a Cash Purchase Receipt for the line with no seller's receipt.
+  await payer
+    .getByRole("link", { name: /Market soap/ })
+    .first()
+    .click();
+  await payer.getByRole("button", { name: "Issue receipt" }).click();
+  const issue = payer.getByRole("dialog");
+  await expect(issue).toContainText("issued internally because the seller gave none");
+  await issue.getByLabel("What was bought").fill("Cleaning soap for the office");
+  await issue.getByRole("button", { name: "Issue receipt" }).click();
+  await confirm(payer);
+  await expect(payer.getByText("Receipt issued.").first()).toBeVisible();
+  await expect(payer.getByText(/CPR-\d{4}-0001/).first()).toBeVisible();
+  await payer.screenshot({
+    animations: "disabled",
+    path: "test-results/receipt-issued.png",
+    fullPage: true,
+  });
+  const pdfLink = await payer.getByRole("link", { name: "Open PDF" }).getAttribute("href");
+  const pdf = await payer.request.get(pdfLink!);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+  writeFileSync("test-results/receipt.pdf", await pdf.body());
+  const visitor = await (await browser.newContext()).newPage();
+  // Only people who may see the expense get the PDF; visitors are sent to sign in.
+  const blocked = await visitor.request.get(pdfLink!, { maxRedirects: 0 });
+  expect([302, 303, 307]).toContain(blocked.status());
+  const check = await payer.getByRole("link", { name: "Check page" }).getAttribute("href");
+  await visitor.goto(check!);
+  await expect(visitor.getByRole("heading", { name: "This receipt is genuine" })).toBeVisible();
+  await expect(visitor.getByText("Mama Nkechi").first()).toBeVisible();
+  await visitor.screenshot({ animations: "disabled", path: "test-results/receipt-check.png" });
+
   await page.goto(report);
   await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
   const { data: file } = await admin
@@ -291,4 +326,60 @@ test("staff enter expenses, the head reviews them and submits the monthly report
     ),
   );
   expect(results.filter((r) => !r.error)).toHaveLength(1);
+
+  // Paid with personal money: Finance pays it back from the Pay back list, and Tunde confirms.
+  const taxi = await client.rpc("save_expense", {
+    p_org: org,
+    p_id: null,
+    p_category: (await admin.from("categories").select("id").eq("org_id", org).single()).data!.id,
+    p_department: dept,
+    p_request: null,
+    p_date: new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Lagos" }).format(new Date()),
+    p_description: "Taxi to the market",
+    p_seller: "Taxi driver",
+    p_location: null,
+    p_phone: null,
+    p_funding: "personal",
+    p_no_receipt: true,
+    p_reason: "Drivers give no receipt",
+    p_items: [{ description: "Fare", quantity: 1, unit_price_minor: 450000 }],
+    p_lock: null,
+  });
+  expect(taxi.error).toBeNull();
+  await client.rpc("submit_expense", { p_id: taxi.data.id, p_lock: 1 });
+  expect(
+    (
+      await heads.rpc("decide_expense", {
+        p_id: taxi.data.id,
+        p_lock: 2,
+        p_action: "accept",
+        p_reason: null,
+      })
+    ).error,
+  ).toBeNull();
+  await payer.goto(`${base}/payments?tab=repay`);
+  await payer.getByRole("link", { name: /Taxi to the market/ }).click();
+  await expect(payer.getByText("Tunde paid with their own money.").first()).toBeVisible();
+  await expect(payer.getByText("Tunde hasn't added bank details").first()).toBeVisible();
+  await payer.getByRole("button", { name: "Record repayment" }).click();
+  await payer.getByRole("dialog").getByLabel("Method").selectOption("cash");
+  await payer.getByRole("dialog").getByRole("button", { name: "Record repayment" }).click();
+  await confirm(payer);
+  await expect(payer.getByText("Repayment recorded.").first()).toBeVisible();
+  await payer.screenshot({
+    animations: "disabled",
+    path: "test-results/repayment.png",
+    fullPage: true,
+  });
+  await payer.goto(`${base}/payments?tab=repay`);
+  await expect(payer.getByRole("heading", { name: "Payments" })).toBeVisible();
+  await expect(payer.getByRole("link", { name: /Taxi to the market/ })).toHaveCount(0);
+  await payer.goto(`${base}/payments?tab=history`);
+  await expect(payer.getByRole("link", { name: /Repaid: Taxi to the market/ })).toBeVisible();
+
+  await page.goto(`${base}/expenses/${taxi.data.id}`);
+  await page.getByRole("button", { name: "I received this" }).click();
+  await confirm(page);
+  await expect(page.getByText("Thanks. Repayment confirmed.").first()).toBeVisible();
+  await expect(page.getByText("Confirmed", { exact: true }).first()).toBeVisible();
 });

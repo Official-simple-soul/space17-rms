@@ -116,6 +116,11 @@ const EVENT = {
   withdrawn: "withdrew the expense",
   removed: "took it out of the report and returned it",
   evidence_added: "added a file",
+  repaid: "recorded a repayment",
+  repayment_voided: "voided a repayment",
+  repayment_confirmed: "confirmed being repaid",
+  receipt_issued: "issued a Cash Purchase Receipt",
+  receipt_voided: "voided a Cash Purchase Receipt",
 } as const;
 
 export function ExpenseTimeline({ events }: { events: ExpenseDetail["events"] }) {

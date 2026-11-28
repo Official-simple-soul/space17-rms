@@ -399,6 +399,44 @@ isOneToOne: false
       referencedColumns: ["org_id","id"]
     }
                   ]
+                },"internal_receipts": {
+                  Row: {
+                    "expense_line_id": string,"id": string,"issued_at": string,"issued_by": string,"number": string,"org_id": string,"replaces_id": string | null,"snapshot": NonNullable<Json>,"status": string,"verify_token": string,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "expense_line_id": string,"id"?: string,"issued_at"?: string,"issued_by": string,"number": string,"org_id": string,"replaces_id"?: string | null,"snapshot": NonNullable<Json>,"status"?: string,"verify_token"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Update: {
+                    "expense_line_id"?: string,"id"?: string,"issued_at"?: string,"issued_by"?: string,"number"?: string,"org_id"?: string,"replaces_id"?: string | null,"snapshot"?: NonNullable<Json>,"status"?: string,"verify_token"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "internal_receipts_org_id_expense_line_id_fkey"
+      columns: ["org_id","expense_line_id"]
+isOneToOne: false
+      referencedRelation: "expense_lines"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "internal_receipts_org_id_issued_by_fkey"
+      columns: ["org_id","issued_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "internal_receipts_org_id_replaces_id_fkey"
+      columns: ["org_id","replaces_id"]
+isOneToOne: false
+      referencedRelation: "internal_receipts"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "internal_receipts_org_id_voided_by_fkey"
+      columns: ["org_id","voided_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 },"invitations": {
                   Row: {
                     "accepted_at": string | null,"created_at": string,"department_id": string | null,"email": string,"expires_at": string,"id": string,"invited_by": string,"org_id": string,"revoked_at": string | null,"role_id": string,"token_hash": string
@@ -719,17 +757,23 @@ isOneToOne: false
                   ]
                 },"payments": {
                   Row: {
-                    "amount_minor": number,"created_at": string,"id": string,"method": string,"note": string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id": string | null,"payee_name": string,"recorded_by": string,"reference": string | null,"request_id": string,"status": string,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null
+                    "amount_minor": number,"created_at": string,"expense_line_id": string | null,"id": string,"method": string,"note": string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id": string | null,"payee_name": string,"recorded_by": string,"reference": string | null,"request_id": string | null,"status": string,"void_reason": string | null,"voided_at": string | null,"voided_by": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_minor": number,"created_at"?: string,"id"?: string,"method": string,"note"?: string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id"?: string | null,"payee_name": string,"recorded_by": string,"reference"?: string | null,"request_id": string,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                    "amount_minor": number,"created_at"?: string,"expense_line_id"?: string | null,"id"?: string,"method": string,"note"?: string | null,"number": string,"org_id": string,"paid_on": string,"payee_membership_id"?: string | null,"payee_name": string,"recorded_by": string,"reference"?: string | null,"request_id"?: string | null,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
                   }
                   Update: {
-                    "amount_minor"?: number,"created_at"?: string,"id"?: string,"method"?: string,"note"?: string | null,"number"?: string,"org_id"?: string,"paid_on"?: string,"payee_membership_id"?: string | null,"payee_name"?: string,"recorded_by"?: string,"reference"?: string | null,"request_id"?: string,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
+                    "amount_minor"?: number,"created_at"?: string,"expense_line_id"?: string | null,"id"?: string,"method"?: string,"note"?: string | null,"number"?: string,"org_id"?: string,"paid_on"?: string,"payee_membership_id"?: string | null,"payee_name"?: string,"recorded_by"?: string,"reference"?: string | null,"request_id"?: string | null,"status"?: string,"void_reason"?: string | null,"voided_at"?: string | null,"voided_by"?: string | null
                   }
                   Relationships: [
                     {
+      foreignKeyName: "payments_expense_line_fkey"
+      columns: ["org_id","expense_line_id"]
+isOneToOne: false
+      referencedRelation: "expense_lines"
+      referencedColumns: ["org_id","id"]
+    },{
       foreignKeyName: "payments_org_id_payee_membership_id_fkey"
       columns: ["org_id","payee_membership_id"]
 isOneToOne: false
@@ -752,6 +796,32 @@ isOneToOne: false
       columns: ["org_id","voided_by"]
 isOneToOne: false
       referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
+                },"period_events": {
+                  Row: {
+                    "actor_id": string,"body": string | null,"created_at": string,"id": number,"org_id": string,"period_id": string,"type": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "actor_id": string,"body"?: string | null,"created_at"?: string,"id"?: never,"org_id": string,"period_id": string,"type": string
+                  }
+                  Update: {
+                    "actor_id"?: string,"body"?: string | null,"created_at"?: string,"id"?: never,"org_id"?: string,"period_id"?: string,"type"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "period_events_org_id_actor_id_fkey"
+      columns: ["org_id","actor_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "period_events_org_id_period_id_fkey"
+      columns: ["org_id","period_id"]
+isOneToOne: false
+      referencedRelation: "report_periods"
       referencedColumns: ["org_id","id"]
     }
                   ]
@@ -797,6 +867,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"report_adjustments": {
+                  Row: {
+                    "amount_minor": number,"decided_at": string | null,"decided_by": string | null,"decision_note": string | null,"id": string,"org_id": string,"proposed_at": string,"proposed_by": string,"reason": string,"report_id": string,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_minor": number,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"id"?: string,"org_id": string,"proposed_at"?: string,"proposed_by": string,"reason": string,"report_id": string,"status"?: string
+                  }
+                  Update: {
+                    "amount_minor"?: number,"decided_at"?: string | null,"decided_by"?: string | null,"decision_note"?: string | null,"id"?: string,"org_id"?: string,"proposed_at"?: string,"proposed_by"?: string,"reason"?: string,"report_id"?: string,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "report_adjustments_org_id_decided_by_fkey"
+      columns: ["org_id","decided_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "report_adjustments_org_id_proposed_by_fkey"
+      columns: ["org_id","proposed_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "report_adjustments_org_id_report_id_fkey"
+      columns: ["org_id","report_id"]
+isOneToOne: false
+      referencedRelation: "reports"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 },"report_events": {
                   Row: {
                     "actor_id": string,"body": string | null,"created_at": string,"id": number,"org_id": string,"report_id": string,"type": string
@@ -825,17 +927,23 @@ isOneToOne: false
                   ]
                 },"report_periods": {
                   Row: {
-                    "created_at": string,"due_date": string,"id": string,"month": string,"org_id": string,"status": string
+                    "closed_at": string | null,"closed_by": string | null,"created_at": string,"due_date": string,"id": string,"month": string,"org_id": string,"status": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"due_date": string,"id"?: string,"month": string,"org_id": string,"status"?: string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"due_date": string,"id"?: string,"month": string,"org_id": string,"status"?: string
                   }
                   Update: {
-                    "created_at"?: string,"due_date"?: string,"id"?: string,"month"?: string,"org_id"?: string,"status"?: string
+                    "closed_at"?: string | null,"closed_by"?: string | null,"created_at"?: string,"due_date"?: string,"id"?: string,"month"?: string,"org_id"?: string,"status"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "report_periods_closed_by_fkey"
+      columns: ["org_id","closed_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
       foreignKeyName: "report_periods_org_id_fkey"
       columns: ["org_id"]
 isOneToOne: false
@@ -1137,14 +1245,23 @@ isOneToOne: false
               "attempt": number,"email": string,"expense_id": string,"id": string,"name": string,"org_name": string,"org_slug": string,"payload": Json,"report_id": string,"request_id": string,"type": string
             }[]
                            },
+"close_period":
+{ Args: { "p_month": string,"p_org": string }; Returns: undefined
+                           },
 "confirm_item":
 { Args: { "p_id": string,"p_lock": number }; Returns: undefined
                            },
 "confirm_payment":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"confirm_repayment":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
 "create_org_invite":
 { Args: { "p_email": string }; Returns: string
+                           },
+"decide_adjustment":
+{ Args: { "p_approve": boolean,"p_id": string,"p_note"?: string }; Returns: undefined
                            },
 "decide_expense":
 { Args: { "p_action": string,"p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined
@@ -1194,6 +1311,9 @@ isOneToOne: false
 "get_expense":
 { Args: { "p_id": string }; Returns: Json
                            },
+"get_internal_receipt":
+{ Args: { "p_id": string }; Returns: Json
+                           },
 "get_join_code":
 { Args: { "p_org": string }; Returns: string
                            },
@@ -1219,6 +1339,9 @@ isOneToOne: false
                            },
 "invite_member":
 { Args: { "p_department"?: string,"p_email": string,"p_org": string,"p_role": string }; Returns: string
+                           },
+"issue_internal_receipt":
+{ Args: { "p_description"?: string,"p_line": string,"p_lock": number }; Returns: string
                            },
 "linkable_requests":
 { Args: { "p_org": string }; Returns: {
@@ -1257,7 +1380,17 @@ isOneToOne: false
                            },
 "list_payments":
 { Args: { "p_desc"?: boolean,"p_from"?: string,"p_limit"?: number,"p_method"?: string,"p_offset"?: number,"p_org": string,"p_search"?: string,"p_sort"?: string,"p_status"?: string,"p_to"?: string }; Returns: {
-              "amount_minor": number,"confirmed": boolean,"id": string,"method": string,"number": string,"paid_on": string,"payee": string,"reference": string,"request_id": string,"request_number": string,"status": string,"title": string,"total": number
+              "amount_minor": number,"confirmed": boolean,"expense_id": string,"id": string,"method": string,"number": string,"paid_on": string,"payee": string,"reference": string,"request_id": string,"request_number": string,"status": string,"title": string,"total": number
+            }[]
+                           },
+"list_periods":
+{ Args: { "p_org": string }; Returns: {
+              "closed_at": string,"closed_by": string,"departments": number,"month": string,"settled": number,"status": string
+            }[]
+                           },
+"list_repayable":
+{ Args: { "p_department"?: string,"p_limit"?: number,"p_offset"?: number,"p_org": string,"p_search"?: string }; Returns: {
+              "accepted_at": string,"department": string,"description": string,"expense_date": string,"id": string,"is_own": boolean,"payee": string,"repaid_minor": number,"total": number,"total_minor": number
             }[]
                            },
 "list_reports":
@@ -1272,6 +1405,11 @@ isOneToOne: false
                            },
 "mark_notifications_read":
 { Args: { "p_org": string,"p_subject"?: string }; Returns: undefined
+                           },
+"month_checklist":
+{ Args: { "p_month": string,"p_org": string }; Returns: {
+              "department": string,"department_id": string,"lines": number,"missing": number,"number": string,"report_id": string,"status": string,"total_minor": number,"waiting": number
+            }[]
                            },
 "my_bank_account":
 { Args: { "p_org": string }; Returns: {
@@ -1316,6 +1454,9 @@ isOneToOne: false
               "email": string,"has_account": boolean,"state": string
             }[]
                            },
+"propose_adjustment":
+{ Args: { "p_amount": number,"p_reason": string,"p_report": string }; Returns: string
+                           },
 "queue_report_reminders":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -1330,6 +1471,9 @@ isOneToOne: false
 "record_payment":
 { Args: { "p_amount": number,"p_lock": number,"p_method": string,"p_note": string,"p_paid_on": string,"p_payee": string,"p_reference": string,"p_request": string,"p_to_requester": boolean }; Returns: string
                            },
+"record_repayment":
+{ Args: { "p_amount": number,"p_line": string,"p_lock": number,"p_method": string,"p_note": string,"p_paid_on": string,"p_reference": string }; Returns: string
+                           },
 "reject_join_request":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
                            },
@@ -1341,6 +1485,14 @@ isOneToOne: false
                            },
 "remove_report_line":
 { Args: { "p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined
+                           },
+"reopen_period":
+{ Args: { "p_month": string,"p_org": string,"p_reason": string }; Returns: undefined
+                           },
+"repayment_account":
+{ Args: { "p_line": string }; Returns: {
+              "account_name": string,"bank_name": string,"last_digits": string,"updated_at": string
+            }[]
                            },
 "request_expenses":
 { Args: { "p_request": string }; Returns: {
@@ -1355,6 +1507,9 @@ isOneToOne: false
                            },
 "reveal_bank_account":
 { Args: { "p_request": string }; Returns: string
+                           },
+"reveal_repayment_account":
+{ Args: { "p_line": string }; Returns: string
                            },
 "review_report":
 { Args: { "p_action": string,"p_id": string,"p_lock": number,"p_reason"?: string }; Returns: undefined
@@ -1466,11 +1621,23 @@ isOneToOne: false
 "update_organisation":
 { Args: { "p_fiscal_month": number,"p_name": string,"p_org": string,"p_timezone": string }; Returns: undefined
                            },
+"verify_internal_receipt":
+{ Args: { "p_token": string }; Returns: Json
+                           },
 "verify_join_request":
 { Args: { "p_token": string }; Returns: string
                            },
+"void_internal_receipt":
+{ Args: { "p_id": string,"p_reason": string }; Returns: undefined
+                           },
 "void_payment":
 { Args: { "p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined
+                           },
+"void_repayment":
+{ Args: { "p_id": string,"p_lock": number,"p_reason": string }; Returns: undefined
+                           },
+"waive_report":
+{ Args: { "p_department": string,"p_month": string,"p_org": string,"p_reason": string }; Returns: undefined
                            },
 "withdraw_expense":
 { Args: { "p_id": string,"p_lock": number }; Returns: undefined

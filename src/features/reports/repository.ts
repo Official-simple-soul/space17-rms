@@ -67,3 +67,17 @@ export async function getReport(orgId: string, id: string) {
   const report = reportDetail.parse(data);
   return report.org_id === orgId ? report : null;
 }
+
+export async function listPeriods(orgId: string) {
+  const { data, error } = await (await createClient()).rpc("list_periods", { p_org: orgId });
+  if (error) throw new Error("Could not load months");
+  return data;
+}
+
+export async function getMonthChecklist(orgId: string, month: string) {
+  const { data, error } = await (
+    await createClient()
+  ).rpc("month_checklist", { p_org: orgId, p_month: month });
+  if (error) throw new Error("Could not load the month");
+  return data;
+}

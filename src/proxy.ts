@@ -9,6 +9,7 @@ const PUBLIC = [
   "/request-access",
   "/invite",
   "/join",
+  "/verify",
   "/auth",
   "/api/jobs",
 ];

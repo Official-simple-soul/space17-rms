@@ -1,4 +1,7 @@
+import { Lock } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { buttonStyles } from "@/components/ui/button";
 import { Notice, PageHeader } from "@/components/ui/surface";
 import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
@@ -15,7 +18,7 @@ export default async function ReportsPage({
   searchParams,
 }: PageProps<"/o/[orgSlug]/reports">) {
   const { orgSlug } = await params;
-  const { organisation } = await requireSection(orgSlug, "reports");
+  const { organisation, can } = await requireSection(orgSlug, "reports");
   const [reports, months, departments, details, view] = await Promise.all([
     listReports(organisation.id, await searchParams),
     listMyReportMonths(organisation.id),
@@ -25,7 +28,21 @@ export default async function ReportsPage({
   ]);
   return (
     <>
-      <PageHeader title="Reports" description="Monthly expense reports by department." />
+      <PageHeader
+        title="Reports"
+        description="Monthly expense reports by department."
+        action={
+          can("periods.close") && (
+            <Link
+              href={`/o/${orgSlug}/reports/months`}
+              className={buttonStyles({ variant: "outline" })}
+            >
+              <Lock className="size-4" aria-hidden />
+              Close a month
+            </Link>
+          )
+        }
+      />
       {months.length > 0 ? (
         <ReportMonths slug={orgSlug} months={months} currency={details.currency} />
       ) : (

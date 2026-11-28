@@ -113,3 +113,78 @@ export async function startProof(input: z.input<typeof proofInput>): Promise<Upl
     }),
   );
 }
+
+const repayment = z.object({
+  lineId: z.uuid(),
+  lock,
+  amount: z
+    .string()
+    .transform((v) => parseMoney(v) ?? 0)
+    .refine((v) => v > 0, "Enter an amount, such as 12,500."),
+  paidOn: z.iso.date("Choose the payment date."),
+  method: paymentMethod,
+  reference: z.string().trim().max(80),
+  note: z.string().trim().max(500),
+});
+
+export async function recordRepayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = repayment.safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const v = input.data;
+  const { error } = await (
+    await createClient()
+  ).rpc("record_repayment", {
+    p_line: v.lineId,
+    p_lock: v.lock,
+    p_amount: v.amount,
+    p_paid_on: v.paidOn,
+    p_method: v.method,
+    p_reference: v.reference,
+    p_note: v.note,
+  });
+  refresh();
+  if (error) return failure(error);
+  deliverSoon();
+  return { ok: true, message: "Repayment recorded." };
+}
+
+export async function voidRepayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      id: z.uuid(),
+      lock,
+      reason: z.string().trim().min(5, "Give a reason of at least 5 characters.").max(500),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("void_repayment", {
+    p_id: input.data.id,
+    p_lock: input.data.lock,
+    p_reason: input.data.reason,
+  });
+  refresh();
+  if (error) return failure(error);
+  deliverSoon();
+  return { ok: true, message: "Repayment voided." };
+}
+
+export async function confirmRepayment(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z.object({ id: z.uuid() }).safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (await createClient()).rpc("confirm_repayment", { p_id: input.data.id });
+  if (error) return failure(error);
+  refresh();
+  return { ok: true, message: "Thanks. Repayment confirmed." };
+}
+
+export async function revealRepaymentAccount(
+  lineId: string,
+): Promise<{ number: string } | { message: string }> {
+  if (!z.uuid().safeParse(lineId).success) return { message: "Something went wrong." };
+  const { data, error } = await (
+    await createClient()
+  ).rpc("reveal_repayment_account", { p_line: lineId });
+  return error ? { message: failure(error).message! } : { number: data };
+}

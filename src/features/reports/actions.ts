@@ -7,6 +7,8 @@ import { badFile, uploadInput, type UploadStart } from "@/features/files/schema"
 import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
 import { failure, invalid, type ActionState } from "@/lib/action-state";
+import { parseMoney } from "@/lib/format";
+import { redirectWith } from "@/lib/flash";
 import { parseSaved } from "@/lib/rpc-json";
 import { createClient } from "@/lib/supabase/server";
 import { draftSchema, type Draft } from "./schema";
@@ -138,4 +140,120 @@ export async function reviewReport(_: ActionState, form: FormData): Promise<Acti
   deliverSoon();
   refresh();
   return { ok: true, message: v.decision === "approve" ? "Report approved." : "Report returned." };
+}
+
+const month = z.iso.date().refine((v) => v.endsWith("-01"), "Choose a month.");
+
+export async function waiveReport(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      orgId: z.uuid(),
+      departmentId: z.uuid(),
+      month,
+      reason: z.string().trim().min(5, "Give a reason of at least 5 characters.").max(500),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const v = input.data;
+  const { error } = await (
+    await createClient()
+  ).rpc("waive_report", {
+    p_org: v.orgId,
+    p_department: v.departmentId,
+    p_month: v.month,
+    p_reason: v.reason,
+  });
+  if (error) return failure(error);
+  refresh();
+  return { ok: true, message: "Department excused for this month." };
+}
+
+export async function closePeriod(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({ orgId: z.uuid(), slug: z.string().regex(/^[a-z0-9-]+$/), month })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("close_period", { p_org: input.data.orgId, p_month: input.data.month });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  // Stays on the month just closed, rather than moving to the next open one.
+  return redirectWith(
+    `/o/${input.data.slug}/reports/months?month=${input.data.month}`,
+    "Month closed.",
+  );
+}
+
+export async function reopenPeriod(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      orgId: z.uuid(),
+      month,
+      reason: z.string().trim().min(5, "Give a reason of at least 5 characters.").max(500),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("reopen_period", {
+    p_org: input.data.orgId,
+    p_month: input.data.month,
+    p_reason: input.data.reason,
+  });
+  if (error) return failure(error);
+  refresh();
+  return { ok: true, message: "Month reopened." };
+}
+
+export async function proposeAdjustment(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      reportId: z.uuid(),
+      direction: z.enum(["add", "remove"]),
+      amount: z
+        .string()
+        .transform((v) => parseMoney(v) ?? 0)
+        .refine((v) => v > 0, "Enter an amount, such as 12,500."),
+      reason: z.string().trim().min(5, "Say why, in at least 5 characters.").max(500),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const v = input.data;
+  const { error } = await (
+    await createClient()
+  ).rpc("propose_adjustment", {
+    p_report: v.reportId,
+    p_amount: v.direction === "add" ? v.amount : -v.amount,
+    p_reason: v.reason,
+  });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  return { ok: true, message: "Adjustment proposed. Someone else must approve it." };
+}
+
+export async function decideAdjustment(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      id: z.uuid(),
+      decision: z.enum(["approve", "reject"]),
+      note: z.string().trim().max(500),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const v = input.data;
+  if (v.decision === "reject" && v.note.length < 5)
+    return { fieldErrors: { note: ["Say why, in at least 5 characters."] } };
+  const { error } = await (
+    await createClient()
+  ).rpc("decide_adjustment", { p_id: v.id, p_approve: v.decision === "approve", p_note: v.note });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  return {
+    ok: true,
+    message: v.decision === "approve" ? "Adjustment approved." : "Adjustment rejected.",
+  };
 }

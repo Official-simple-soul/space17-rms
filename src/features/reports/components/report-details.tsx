@@ -92,18 +92,23 @@ export function ReportLines({ report: r, base }: { report: ReportDetail; base: s
   );
 }
 
+const EVENTS = {
+  submitted: "sent the report to Finance",
+  approved: "approved the report",
+  returned: "returned the report",
+  waived: "excused the department from reporting",
+  adjustment_proposed: "proposed an adjustment",
+  adjustment_approved: "approved an adjustment",
+  adjustment_rejected: "rejected an adjustment",
+} as const;
+
 export function ReportTimeline({ events }: { events: ReportDetail["events"] }) {
   return (
     <ol className="divide-line divide-y">
       {events.map((e) => (
         <li key={e.id} className="py-4 text-sm first:pt-0 last:pb-0">
           <p>
-            <span className="font-medium">{e.actor}</span>{" "}
-            {e.type === "submitted"
-              ? "sent the report to Finance"
-              : e.type === "approved"
-                ? "approved the report"
-                : "returned the report"}
+            <span className="font-medium">{e.actor}</span> {EVENTS[e.type]}
             {e.body && `: ${e.body}`}
           </p>
           <time dateTime={e.at} className="text-muted text-xs">

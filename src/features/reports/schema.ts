@@ -8,6 +8,7 @@ export const STATUSES = {
   under_review: "With Finance",
   returned: "Returned",
   approved: "Approved",
+  waived: "Excused",
 } as const;
 export type ReportStatus = keyof typeof STATUSES;
 export const reportStatus = z.enum(Object.keys(STATUSES) as [ReportStatus, ...ReportStatus[]]);
@@ -50,7 +51,15 @@ export const reportDetail = z.object({
   events: z.array(
     z.object({
       id: z.number(),
-      type: z.enum(["submitted", "returned", "approved"]),
+      type: z.enum([
+        "submitted",
+        "returned",
+        "approved",
+        "waived",
+        "adjustment_proposed",
+        "adjustment_approved",
+        "adjustment_rejected",
+      ]),
       actor: z.string(),
       body: z.string().nullable(),
       at: z.string(),
@@ -62,6 +71,23 @@ export const reportDetail = z.object({
   open_questions: z.number(),
   decided_by: z.string().nullable(),
   decided_at: z.string().nullable(),
+  adjustments: z.array(
+    z.object({
+      id: z.uuid(),
+      amount_minor: z.number(),
+      reason: z.string(),
+      status: z.enum(["proposed", "approved", "rejected"]),
+      proposed_by: z.string(),
+      proposed_at: z.string(),
+      decided_by: z.string().nullable(),
+      decided_at: z.string().nullable(),
+      decision_note: z.string().nullable(),
+      can_decide: z.boolean(),
+    }),
+  ),
+  adjusted_minor: z.number(),
+  can_adjust: z.boolean(),
+  period_closed: z.boolean(),
 });
 export type ReportDetail = z.infer<typeof reportDetail>;
 

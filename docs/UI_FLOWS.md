@@ -89,7 +89,7 @@ If someone else has already acted, the page refreshes and explains. There is no 
 
 ## 7. Finance
 
-**Payments:** queue tabs are Requests and Reimbursements. Open an item → review approved, paid and balance → enter amount, date, method, reference and proof → record. Overpayment is blocked. Bank details are hidden until **Reveal**, which is audited.
+**Payments:** tabs are Requests, **Pay back** (accepted expenses paid with personal money) and History. Repayments go to the person who paid, who confirms; nobody repays themselves; the person's bank details are revealed only on request and recorded. Open an item → review approved, paid and balance → enter amount, date, method, reference and proof → record. Overpayment is blocked. Bank details are hidden until **Reveal**, which is audited.
 
 **Report review**
 1. Compliance list: departments by submitted, late and missing.
@@ -103,11 +103,11 @@ If someone else has already acted, the page refreshes and explains. There is no 
 3. Preview the receipt: organisation as issuer, "Cash Purchase Receipt", "Issued internally: vendor receipt unavailable".
 4. Confirm → number assigned, PDF generated and attached.
 
-The seller, amounts and date cannot be changed at this step; return the line to correct them. Issuing is unavailable to the person who entered the line. Void and reissue are on the receipt page.
+The receipt is a PDF drawn from what was recorded when issued, with a QR code to a public check page that shows only the number, issuer, dates, seller, total and whether it was voided. An issued receipt counts as evidence. The seller, amounts and date cannot be changed at this step; return the line to correct them. Issuing is unavailable to the person who entered the line. Void and reissue are on the receipt page.
 
-**Close month:** checklist by department → approve or waive outstanding reports → confirm → locked.
+**Close month:** Reports → **Close a month**: each department's report for the month; excuse a department that had nothing to report (with a reason); close once all are approved or excused. Lines lock and late expenses go to the next open month. A closed month can be reopened with a reason.
 
-**Adjustment:** open an approved report → add amount and reason → a second person approves.
+**Correction:** on an approved report, **Propose a correction** (amount to add or take away, and why); a different reviewer approves or rejects it. Approved corrections show beside the total.
 
 **Export:** choose PDF, Excel or full pack → filter → background job → notification with an expiring download.
 

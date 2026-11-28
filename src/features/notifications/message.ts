@@ -18,6 +18,24 @@ export function notificationMessage(type: string, p: NotificationPayload): strin
       return `${actor} handed you ${item}. Tap to confirm you've got it.`;
     case "item_received":
       return `${actor} confirmed receiving ${item}`;
+    case "repayment_recorded":
+      return `${actor} recorded paying you back for ${item}. Confirm when you receive it.`;
+    case "repayment_voided":
+      return `${actor} voided a repayment for ${item}`;
+    case "repayment_confirmed":
+      return `${actor} confirmed being paid back for ${item}`;
+    case "receipt_issued":
+      return `${actor} issued a Cash Purchase Receipt for ${item}`;
+    case "receipt_voided":
+      return `${actor} voided the Cash Purchase Receipt for ${item}`;
+    case "period_closed":
+      return `${actor} closed ${p.title ?? "a month"}. Its reports can no longer change.`;
+    case "adjustment_proposed":
+      return `${actor} proposed a correction to ${item}. It needs someone else to approve it.`;
+    case "adjustment_approved":
+      return `${actor} approved your correction to ${item}`;
+    case "adjustment_rejected":
+      return `${actor} rejected your correction to ${item}`;
     case "request_question":
       return `${actor} asked you a question about ${item}`;
     case "report_approved":

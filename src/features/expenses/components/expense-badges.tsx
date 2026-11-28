@@ -36,9 +36,10 @@ export function ReceiptStatus({
   draft?: boolean;
   compact?: boolean;
 }) {
-  const has = evidence === "vendor_receipt";
+  // Our own Cash Purchase Receipt counts, just as a seller's receipt does.
+  const has = evidence !== "missing";
   // While drafting, a missing receipt can still be added, so it isn't a warning yet.
-  const label = has ? EVIDENCE.vendor_receipt : draft ? "None yet" : EVIDENCE.missing;
+  const label = has ? EVIDENCE[evidence] : draft ? "None yet" : EVIDENCE.missing;
   const Icon = has ? CircleCheck : draft ? CircleDashed : CircleAlert;
   return (
     <span
