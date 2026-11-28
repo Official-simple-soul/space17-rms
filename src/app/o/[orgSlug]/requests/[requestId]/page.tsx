@@ -9,10 +9,11 @@ import { MarkRead } from "@/features/notifications/components/mark-read";
 import { getOrganisation } from "@/features/organisations/repository";
 import { PaymentsCard } from "@/features/payments/components/payments-card";
 import {
-  CommentForm,
   DecisionPanel,
   DeleteDraft,
   WithdrawButton,
+  ConfirmItemForm,
+  HandOverForm,
 } from "@/features/requests/components/request-actions";
 import {
   ApprovalSteps,
@@ -21,6 +22,8 @@ import {
 } from "@/features/requests/components/request-details";
 import { StatusBadge } from "@/features/requests/components/status-badge";
 import { getMyWork, getRequest } from "@/features/requests/repository";
+import { Chat } from "@/components/ui/chat";
+import { sendRequestMessage } from "@/features/requests/actions";
 import { getOrganisationContext } from "@/lib/auth/session";
 import { formatDate, formatMoney, todayIn } from "@/lib/format";
 
@@ -39,8 +42,10 @@ export default async function RequestPage({
   if (!request) notFound();
   const base = `/o/${orgSlug}/requests`;
   const expenses = await listRequestExpenses(request.id);
+  // Only money given to the requester is accounted for with expenses.
   const spendable =
     request.is_requester &&
+    request.provision === "money" &&
     can("expenses.create") &&
     ["approved", "part_paid", "paid", "received"].includes(request.status);
   const editable =
@@ -61,8 +66,19 @@ export default async function RequestPage({
             ? `${request.number} · Submitted ${formatDate(request.submitted_at!)}`
             : "Not submitted yet"
         }
-        action={<StatusBadge status={request.status} />}
+        action={<StatusBadge status={request.status} provision={request.provision ?? undefined} />}
       />
+      {request.is_requester && request.chat.status === "open" && (
+        <div className="mb-6">
+          <Notice tone="alert">
+            {request.chat.messages.findLast((m) => m.question)?.author ?? "Someone"} asked you a
+            question.{" "}
+            <a href="#conversation" className="font-medium underline">
+              Answer it
+            </a>
+          </Notice>
+        </div>
+      )}
       {lastReason && (request.status === "returned" || request.status === "rejected") && (
         <div className="mb-6">
           <Notice tone="alert">
@@ -74,14 +90,31 @@ export default async function RequestPage({
         <div className="space-y-6">
           <RequestDetails request={request} filesBase={`/o/${orgSlug}/files`} />
           {request.status !== "draft" && (
+            <Card id="conversation" className="scroll-mt-6 p-6">
+              <h2 className="font-semibold">Conversation</h2>
+              <p className="text-muted mt-1 mb-5 text-sm">
+                Questions and answers about this request. Everyone who can see it can read them.
+              </p>
+              <Chat
+                messages={request.chat.messages}
+                send={sendRequestMessage}
+                fields={{ id: request.id }}
+                canSend={request.can_message}
+                askLabel={request.can_ask ? `Ask ${request.requester} to answer this` : undefined}
+                empty="No messages yet."
+                placeholder={
+                  request.is_requester ? "Write a message" : `Write to ${request.requester}`
+                }
+              />
+            </Card>
+          )}
+          {request.status !== "draft" && (
             <Card className="p-6">
               <h2 className="mb-4 font-semibold">Activity</h2>
-              {request.can_comment && (
-                <div className="border-line mb-6 border-b pb-6">
-                  <CommentForm id={request.id} count={request.events.length} />
-                </div>
-              )}
-              <Timeline events={request.events} currency={request.currency} />
+              <Timeline
+                events={request.events.filter((e) => e.type !== "commented")}
+                currency={request.currency}
+              />
             </Card>
           )}
         </div>
@@ -99,6 +132,53 @@ export default async function RequestPage({
           )}
           {request.already_decided && (
             <Notice>You&apos;ve approved this step. It&apos;s waiting for someone else.</Notice>
+          )}
+          {request.can_confirm_item && (
+            <Card className="space-y-4 p-6">
+              <div>
+                <h2 className="font-semibold">Have you got it?</h2>
+                <p className="text-muted mt-1 text-sm">
+                  {request.handover?.by} handed this over
+                  {request.handover?.at && ` on ${formatDate(request.handover.at)}`}.
+                  {request.handover?.note && ` ${request.handover.note}`}
+                </p>
+              </div>
+              <ConfirmItemForm request={request} />
+            </Card>
+          )}
+          {request.can_hand_over && (
+            <Card className="space-y-4 p-6">
+              <div>
+                <h2 className="font-semibold">Hand it over</h2>
+                <p className="text-muted mt-1 text-sm">
+                  Give {request.requester} one you already have, or buy one. If you buy it, add the
+                  purchase as an expense with the receipt so it&apos;s in the monthly report.
+                </p>
+              </div>
+              {can("expenses.create") && (
+                <Link
+                  href={`/o/${orgSlug}/expenses/new?request=${request.id}`}
+                  className={buttonStyles({ variant: "outline", className: "w-full" })}
+                >
+                  Add the purchase as an expense
+                </Link>
+              )}
+              <HandOverForm request={request} />
+            </Card>
+          )}
+          {request.handover && !request.can_confirm_item && (
+            <Card className="space-y-1 p-6 text-sm">
+              <h2 className="mb-2 font-semibold">Handed over</h2>
+              <p>
+                By {request.handover.by} on {formatDate(request.handover.at)}
+                {request.handover.note && `: ${request.handover.note}`}
+              </p>
+              <p className="text-muted">
+                {request.handover.received_at
+                  ? `${request.requester} confirmed receiving it on ${formatDate(request.handover.received_at)}.`
+                  : `Waiting for ${request.requester} to confirm.`}
+              </p>
+            </Card>
           )}
           {request.needs_bank && (
             <Notice>

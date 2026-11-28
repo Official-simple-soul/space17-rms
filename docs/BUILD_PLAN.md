@@ -102,6 +102,8 @@ Sizes are relative: S, M, L.
 | Expense entry and HOD inbox | L | Evidence status is correct; bulk accept respects its limits |
 | Monthly periods and reports | L | One report per department per month; submitter cannot approve |
 | Finance review and line queries | M | Open queries block approval; missing evidence needs a reason |
+| Requests for items | M | Provided items are handed over and confirmed; any purchase is an expense linked to the request |
+| Conversations on requests and report lines | M | Questions wait for an answer; messages can't change; reused in both places |
 | Reimbursements | M | Personal expenses can be paid and confirmed |
 | Internal Cash Purchase Receipt | L | Organisation is issuer; enterer cannot issue; snapshot is frozen |
 | QR verification, void and reissue | M | Public page shows only agreed fields |

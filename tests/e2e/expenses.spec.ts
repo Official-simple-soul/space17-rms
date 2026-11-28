@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { admin, confirm, createOrganisation, newClient, password, signIn } from "./helpers";
+import { admin, confirm, createOrganisation, enrol, newClient, password, signIn } from "./helpers";
 
 const receipt = {
   name: "receipt.pdf",
@@ -173,7 +173,7 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await boss.getByRole("button", { name: "Send to Finance" }).click();
   await expect(boss.getByRole("alertdialog")).toContainText("1 without a receipt.");
   await confirm(boss);
-  await expect(boss.getByText("Under review").first()).toBeVisible();
+  await expect(boss.getByText("With Finance").first()).toBeVisible();
   await expect(boss.getByRole("button", { name: "Send to Finance" })).toHaveCount(0);
   await expect(boss.getByText("Soap prices went up.").first()).toBeVisible();
   await boss.setViewportSize({ width: 390, height: 844 });
@@ -193,6 +193,54 @@ test("staff enter expenses, the head reviews them and submits the monthly report
   await payer.getByRole("link", { name: /Halima submitted an expense report/ }).click();
   await expect(payer).toHaveURL(report);
   await expect(payer.getByText(/RPT-/).first()).toBeVisible();
+
+  // Finance asks about a line; it blocks approval until answered and resolved.
+  await expect(
+    payer.getByText("Approving or returning needs two-step verification").first(),
+  ).toBeVisible();
+  await payer.goto("/account");
+  await enrol(payer);
+  await expect(payer.getByText("Two-step verification is on.").first()).toBeVisible();
+  await payer.goto(report);
+  await payer.getByRole("button", { name: "Ask about Market soap" }).click();
+  let panel = payer.getByRole("dialog");
+  await panel.getByLabel("Your message").fill("Which market was this?");
+  await panel.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(panel.getByRole("list", { name: "Messages" })).toContainText("Which market");
+  await panel.getByRole("button", { name: "Close" }).click();
+  await payer.getByRole("button", { name: "Approve report" }).click();
+  await confirm(payer);
+  await expect(payer.getByText("Some questions are still open").first()).toBeVisible();
+
+  await boss.goto(report);
+  await expect(boss.getByText("Finance has a question about an expense").first()).toBeVisible();
+  await boss.getByRole("button", { name: "Conversation about Market soap" }).click();
+  panel = boss.getByRole("dialog");
+  await panel.getByLabel("Your message").fill("Wuse market, stall 14");
+  await panel.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(panel.getByRole("list", { name: "Messages" })).toContainText("stall 14");
+  await boss.screenshot({ animations: "disabled", path: "test-results/report-line-chat.png" });
+
+  await payer.reload();
+  await payer.getByRole("button", { name: "Conversation about Market soap" }).click();
+  panel = payer.getByRole("dialog");
+  await expect(panel).toContainText("stall 14");
+  await panel.getByRole("button", { name: "Mark as resolved" }).click();
+  await expect(payer.getByText("Marked as resolved.").first()).toBeVisible();
+  await panel.getByRole("button", { name: "Close" }).click();
+  await payer.getByRole("button", { name: "Approve report" }).click();
+  await confirm(payer);
+  await expect(payer.getByText("Some expenses have no receipt").first()).toBeVisible();
+  await payer.getByLabel(/Note for the record/).fill("Market sellers give no receipts");
+  await payer.getByRole("button", { name: "Approve report" }).click();
+  await confirm(payer);
+  await expect(payer.getByText("Report approved.").first()).toBeVisible();
+  await expect(payer.getByText("Approved", { exact: true }).first()).toBeVisible();
+  await payer.screenshot({
+    animations: "disabled",
+    path: "test-results/report-approved.png",
+    fullPage: true,
+  });
   await page.goto(report);
   await expect(page.getByText("We couldn't find that page").first()).toBeVisible();
   const { data: file } = await admin

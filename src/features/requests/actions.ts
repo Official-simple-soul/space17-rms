@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { messageInput } from "@/features/conversations/schema";
 import { badFile, uploadInput, type UploadStart } from "@/features/files/schema";
 import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
@@ -40,6 +41,7 @@ export async function saveDraft(input: Draft): Promise<SaveResult> {
     p_purpose: v.purpose,
     p_needed_by: v.neededBy as string,
     p_supplier: v.supplier,
+    p_provision: v.provision as string,
     p_items: v.items,
     p_lock: v.lock as number,
   });
@@ -137,17 +139,21 @@ export async function decideRequest(_: ActionState, form: FormData): Promise<Act
   };
 }
 
-export async function addComment(_: ActionState, form: FormData): Promise<ActionState> {
-  const input = z
-    .object({ id: z.uuid(), body: z.string().trim().min(1, "Write a comment.").max(2000) })
-    .safeParse(Object.fromEntries(form));
+export async function sendRequestMessage(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = messageInput.extend({ id: z.uuid() }).safeParse(Object.fromEntries(form));
   if (!input.success) return invalid(input.error);
+  const question = input.data.question === "on";
   const { error } = await (
     await createClient()
-  ).rpc("comment_on_request", { p_id: input.data.id, p_body: input.data.body });
+  ).rpc("send_request_message", {
+    p_id: input.data.id,
+    p_body: input.data.body,
+    p_question: question,
+  });
   if (error) return failure(error);
+  deliverSoon();
   refresh();
-  return { ok: true, message: "Comment added." };
+  return { ok: true, message: question ? "Question sent." : "Message sent." };
 }
 
 const fileInput = uploadInput.extend({
@@ -170,4 +176,33 @@ export async function startUpload(input: z.input<typeof fileInput>): Promise<Upl
       p_size: v.size,
     }),
   );
+}
+
+export async function handOverItem(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({ id: z.uuid(), lock, note: z.string().trim().max(500) })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("hand_over_item", {
+    p_id: input.data.id,
+    p_lock: input.data.lock,
+    p_note: input.data.note,
+  });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  return { ok: true, message: "Marked as handed over." };
+}
+
+export async function confirmItem(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z.object({ id: z.uuid(), lock }).safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("confirm_item", { p_id: input.data.id, p_lock: input.data.lock });
+  if (error) return failure(error);
+  refresh();
+  return { ok: true, message: "Thanks. It's marked as received." };
 }

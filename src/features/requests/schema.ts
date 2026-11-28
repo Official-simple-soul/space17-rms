@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { attachment } from "@/features/files/schema";
+import { thread } from "@/features/conversations/schema";
 import { paymentMethod } from "@/features/payments/schema";
 
 export const STATUSES = {
@@ -14,9 +15,27 @@ export const STATUSES = {
   accounted: "Accounted for",
   closed: "Done",
   cancelled: "Withdrawn",
+  handed_over: "Handed over",
 } as const;
 export type RequestStatus = keyof typeof STATUSES;
 export const requestStatus = z.enum(Object.keys(STATUSES) as [RequestStatus, ...RequestStatus[]]);
+
+/** How a request is met: money for the requester, or the item provided by the organisation. */
+export const PROVISIONS = {
+  provide: {
+    label: "Provide it for me",
+    hint: "We give you one we have, or buy it and hand it to you.",
+  },
+  money: { label: "Give me the money", hint: "You buy it and bring back the receipt." },
+} as const;
+export type Provision = keyof typeof PROVISIONS;
+export const provision = z.enum(["money", "provide"]);
+
+/** Statuses in plain words for the way the request is met. */
+export function statusLabel(status: RequestStatus, how: Provision = "money"): string {
+  if (how === "provide" && status === "approved") return "Approved, being provided";
+  return STATUSES[status];
+}
 
 const named = z.object({ id: z.uuid(), name: z.string() });
 
@@ -38,6 +57,17 @@ export const requestDetail = z.object({
   department: named.nullable(),
   requester: z.string(),
   supplier: z.string(),
+  provision: provision.nullable(),
+  handover: z
+    .object({
+      by: z.string(),
+      at: z.string(),
+      note: z.string().nullable(),
+      received_at: z.string().nullable(),
+    })
+    .nullable(),
+  can_hand_over: z.boolean(),
+  can_confirm_item: z.boolean(),
   items: z.array(
     z.object({
       id: z.uuid(),
@@ -74,6 +104,8 @@ export const requestDetail = z.object({
         "paid",
         "payment_voided",
         "payment_confirmed",
+        "handed_over",
+        "item_received",
       ]),
       actor: z.string(),
       step: z.string().nullable(),
@@ -117,6 +149,9 @@ export const requestDetail = z.object({
     })
     .nullable(),
   needs_bank: z.boolean(),
+  chat: thread,
+  can_message: z.boolean(),
+  can_ask: z.boolean(),
 });
 export type RequestDetail = z.infer<typeof requestDetail>;
 
@@ -136,6 +171,7 @@ export const draftSchema = z.object({
   purpose: z.string().max(2000),
   neededBy: z.iso.date().nullable(),
   supplier: z.string().max(120),
+  provision: provision.nullable(),
   items: z
     .array(
       z.object({

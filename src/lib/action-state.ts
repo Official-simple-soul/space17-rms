@@ -42,6 +42,9 @@ const MESSAGES: Record<string, string> = {
   stale_request: "This request has changed since you opened it. Reload to see the latest version.",
   request_incomplete: "Say what you need and why.",
   amount_missing: "Say how much it will cost. Your best guess is fine.",
+  provision_missing: "Choose how you'd like it: provided for you, or the money.",
+  not_ready: "This isn't ready to hand over yet.",
+  note_too_long: "Keep the note under 500 characters.",
   department_unavailable: "You're not in that department. Choose one of yours.",
   no_approver:
     "No one else can approve requests for this department yet. Ask an admin to choose a head for it.",
@@ -74,6 +77,10 @@ const MESSAGES: Record<string, string> = {
   invalid_month: "That month isn't available.",
   missing_evidence: "Some expenses have no receipt. Confirm you want to submit anyway.",
   no_reviewer: "No one else can check reports yet. Ask an admin to give someone the Finance role.",
+  own_report: "You can't approve a report you sent.",
+  open_questions: "Some questions are still open. Resolve them before approving.",
+  missing_evidence_reason: "Some expenses have no receipt. Add a note saying why you accept them.",
+  invalid_action: "Something went wrong. Please try again.",
   department_has_expenses: "This department has expenses or reports in progress.",
   not_found: "That item no longer exists or has already changed.",
 };

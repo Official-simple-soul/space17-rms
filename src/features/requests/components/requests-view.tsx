@@ -5,7 +5,7 @@ import Link from "next/link";
 import { DataView, type Column, type ServerPaging } from "@/components/ui/data-view";
 import type { ListView } from "@/config/constants";
 import { formatDate, formatMoney } from "@/lib/format";
-import { STATUSES, type RequestStatus } from "../schema";
+import { STATUSES, type RequestStatus, type Provision } from "../schema";
 import { StatusBadge } from "./status-badge";
 
 export type RequestRow = {
@@ -16,6 +16,7 @@ export type RequestRow = {
   category: string;
   department: string;
   status: RequestStatus;
+  provision: Provision;
   amount: number;
   waitingSince: string;
   date: string;
@@ -101,7 +102,7 @@ export function RequestsView({
           key: "status",
           header: "Status",
           sort: (r) => r.status,
-          cell: (r) => <StatusBadge status={r.status} />,
+          cell: (r) => <StatusBadge status={r.status} provision={r.provision} />,
         },
     {
       key: "date",
@@ -125,9 +126,14 @@ export function RequestsView({
               {
                 key: "status",
                 label: "Status",
-                options: Object.entries(STATUSES)
-                  .filter(([value]) => mode === "mine" || value !== "draft")
-                  .map(([value, label]) => ({ value, label })),
+                options: [
+                  ...(mode === "all"
+                    ? [{ value: "to_hand_over", label: "Ready to hand over" }]
+                    : []),
+                  ...Object.entries(STATUSES)
+                    .filter(([value]) => mode === "mine" || value !== "draft")
+                    .map(([value, label]) => ({ value, label })),
+                ],
               },
             ]),
         { key: "category", label: "Category", options: options(categories) },
@@ -140,7 +146,7 @@ export function RequestsView({
         <>
           <div className="flex items-start justify-between gap-2">
             {link(r)}
-            {mode !== "inbox" && <StatusBadge status={r.status} />}
+            {mode !== "inbox" && <StatusBadge status={r.status} provision={r.provision} />}
           </div>
           <p className="mt-4 text-lg font-semibold">{amount(r)}</p>
           <p className="text-muted text-sm">

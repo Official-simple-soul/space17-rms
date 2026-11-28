@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/surface";
 import { ExpenseFlags, ReceiptStatus } from "@/features/expenses/components/expense-badges";
 import { FUNDING } from "@/features/expenses/schema";
 import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
+import { LineConversation, LineStatus } from "./report-review";
 import type { ReportDetail } from "../schema";
 import { summarise } from "../summary";
 
@@ -70,6 +71,10 @@ export function ReportLines({ report: r, base }: { report: ReportDetail; base: s
                   </span>
                 </Link>
                 <ExpenseFlags flags={l.flags.filter((f) => f !== "missing_receipt")} />
+                <LineStatus thread={l.thread} />
+                <div className="pt-1">
+                  <LineConversation line={l} canReview={r.can_review} />
+                </div>
               </td>
               <td className="hidden px-5 whitespace-nowrap md:table-cell">{formatDate(l.date)}</td>
               <td className="hidden px-5 2xl:table-cell">{FUNDING[l.funding]}</td>
@@ -93,8 +98,13 @@ export function ReportTimeline({ events }: { events: ReportDetail["events"] }) {
       {events.map((e) => (
         <li key={e.id} className="py-4 text-sm first:pt-0 last:pb-0">
           <p>
-            <span className="font-medium">{e.actor}</span> submitted the report
-            {e.body && `, ${e.body}`}
+            <span className="font-medium">{e.actor}</span>{" "}
+            {e.type === "submitted"
+              ? "sent the report to Finance"
+              : e.type === "approved"
+                ? "approved the report"
+                : "returned the report"}
+            {e.body && `: ${e.body}`}
           </p>
           <time dateTime={e.at} className="text-muted text-xs">
             {formatDateTime(e.at)}

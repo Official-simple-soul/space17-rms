@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { messageInput } from "@/features/conversations/schema";
 import { badFile, uploadInput, type UploadStart } from "@/features/files/schema";
 import { uploadLink } from "@/features/files/start";
 import { deliverSoon } from "@/features/notifications/deliver";
@@ -87,4 +88,54 @@ export async function startReportFile(input: z.input<typeof fileInput>): Promise
       p_size: v.size,
     }),
   );
+}
+
+export async function sendLineMessage(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = messageInput.extend({ line: z.uuid() }).safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("send_line_message", { p_line: input.data.line, p_body: input.data.body });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  return { ok: true, message: "Message sent." };
+}
+
+export async function resolveLineQuestion(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z.object({ line: z.uuid() }).safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const { error } = await (
+    await createClient()
+  ).rpc("resolve_line_question", { p_line: input.data.line });
+  if (error) return failure(error);
+  refresh();
+  return { ok: true, message: "Marked as resolved." };
+}
+
+export async function reviewReport(_: ActionState, form: FormData): Promise<ActionState> {
+  const input = z
+    .object({
+      id: z.uuid(),
+      lock: z.coerce.number().int(),
+      decision: z.enum(["approve", "return"]),
+      reason: z.string().trim().max(1000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success) return invalid(input.error);
+  const v = input.data;
+  if (v.decision === "return" && v.reason.length < 5)
+    return { fieldErrors: { reason: ["Say what needs to change, in at least 5 characters."] } };
+  const { error } = await (
+    await createClient()
+  ).rpc("review_report", {
+    p_id: v.id,
+    p_lock: v.lock,
+    p_action: v.decision,
+    p_reason: v.reason || (null as unknown as string),
+  });
+  if (error) return failure(error);
+  deliverSoon();
+  refresh();
+  return { ok: true, message: v.decision === "approve" ? "Report approved." : "Report returned." };
 }

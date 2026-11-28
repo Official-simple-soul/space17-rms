@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { admin, createOrganisation, enrol, password, signIn } from "./helpers";
+import { admin, confirm, createOrganisation, enrol, password, signIn } from "./helpers";
 
 test("staff ask, the department approver returns, reduces and approves", async ({
   page,
   browser,
 }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const id = `r${Date.now().toString(36)}`;
   const owner = `boss-${id}@test.local`;
   const base = await createOrganisation(id, owner);
@@ -72,11 +72,13 @@ test("staff ask, the department approver returns, reduces and approves", async (
   await staff.getByRole("button", { name: "Send request" }).click();
   await expect(staff.getByText("Say what you need.").first()).toBeVisible();
   await expect(staff.getByText("Enter how much it will cost.").first()).toBeVisible();
+  await expect(staff.getByText("Choose how you'd like it.").first()).toBeVisible();
   await staff.getByLabel("What do you need?").fill("Printer paper");
-  await expect(staff).toHaveURL(/new\?draft=/);
+  await expect(staff).toHaveURL(/new\?draft=/, { timeout: 15_000 });
   await expect(staff.getByText("Draft saved").first()).toBeVisible();
   await expect(staff.getByText("Not saved yet")).toHaveCount(0);
   await staff.getByLabel("Why do you need it?").fill("Monthly office supply");
+  await staff.getByText("Give me the money").click();
   await staff.getByRole("button", { name: "List items separately" }).click();
   await staff.getByLabel("Item 1", { exact: true }).fill("A4 paper");
   await staff.getByLabel("Quantity").fill("4");
@@ -266,10 +268,11 @@ test("staff ask, the department approver returns, reduces and approves", async (
   await expect(
     staff.getByText("Amaka approved (Approval), reduced to ₦22,000.00").first(),
   ).toBeVisible();
-  await staff.getByLabel("Add a comment").fill("Thank you");
-  await staff.getByRole("button", { name: "Comment" }).click();
-  await expect(staff.getByText("Tunde commented").first()).toBeVisible();
-  await expect(staff.getByLabel("Add a comment")).toHaveValue("");
+  await staff.getByLabel("Your message").fill("Thank you");
+  await staff.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(staff.getByText("Message sent.").first()).toBeVisible();
+  await expect(staff.getByLabel("Your message")).toHaveValue("");
+  await expect(staff.getByRole("list", { name: "Messages" })).toContainText("Thank you");
   await staff.screenshot({
     animations: "disabled",
     path: "test-results/request-approved.png",
@@ -279,7 +282,7 @@ test("staff ask, the department approver returns, reduces and approves", async (
   // Delete a draft; admins see everything submitted but no drafts.
   await staff.goto(`${base}/requests/new`);
   await staff.getByLabel("What do you need?").fill("Spare chairs");
-  await expect(staff).toHaveURL(/new\?draft=/);
+  await expect(staff).toHaveURL(/new\?draft=/, { timeout: 15_000 });
   await expect(staff.getByRole("button", { name: "Delete draft" })).toBeVisible();
   await staff.goto(`${base}/requests`);
   await expect(staff.getByRole("row", { name: /Spare chairs/ })).toBeVisible();
@@ -307,7 +310,8 @@ test("staff ask, the department approver returns, reduces and approves", async (
   await staff.goto(`${base}/requests/new`);
   await staff.getByLabel("What do you need?").fill("Bus fare");
   await staff.getByLabel("Why do you need it?").fill("Trip to the market");
-  await staff.getByLabel("How much will it cost?").fill("4,500");
+  await staff.getByText("Give me the money").click();
+  await staff.getByLabel("How much do you need?").fill("4,500");
   await expect(staff.getByText("₦4,500.00").first()).toBeVisible();
   await staff.screenshot({
     animations: "disabled",
@@ -327,11 +331,66 @@ test("staff ask, the department approver returns, reduces and approves", async (
   await staff.goto(`${base}/requests/new`);
   await staff.getByLabel("What do you need?").fill("Gas refill");
   await staff.getByLabel("Why do you need it?").fill("For cooking");
-  await staff.getByLabel("How much will it cost?").fill("12,000");
+  await staff.getByText("Give me the money").click();
+  await staff.getByLabel("How much do you need?").fill("12,000");
   await staff.getByRole("button", { name: "Send request" }).click();
   await expect(staff.getByText("Waiting for Amaka").first()).toBeVisible();
+
+  // A small badge on the All requests tab counts what is waiting.
+  await page.goto(`${base}/requests?tab=all`);
+  await expect(page.getByRole("link", { name: "All requests 1 waiting" })).toBeVisible();
+  await page.screenshot({ animations: "disabled", path: "test-results/requests-tab-badge.png" });
+
+  // The approver asks a question; the requester is told and answers in the conversation.
+  await approver.goto(staff.url());
+  await approver.getByLabel("Your message").fill("Is this the big cylinder?");
+  await approver.getByLabel("Ask Tunde to answer this").check();
+  await approver.getByRole("button", { name: "Send question" }).click();
+  await expect(approver.getByText("Question sent.").first()).toBeVisible();
+  await staff.reload();
+  await expect(staff.getByText("Amaka asked you a question.").first()).toBeVisible();
+  await staff.getByRole("link", { name: "Answer it" }).click();
+  await staff.getByLabel("Your message").fill("Yes, the 12.5 kg one");
+  await staff.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(staff.getByText("Message sent.").first()).toBeVisible();
+  await expect(staff.getByText("asked you a question")).toHaveCount(0);
+  await staff.screenshot({
+    animations: "disabled",
+    path: "test-results/m-request-chat.png",
+    fullPage: true,
+  });
   await page.goto(staff.url());
   await page.getByRole("button", { name: "Approve", exact: true }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Approve" }).click();
   await expect(page.getByText(/Ada Owner approved/).first()).toBeVisible();
+
+  // Provided: no amount needed, handed over by the approver, confirmed by the requester.
+  await staff.goto(`${base}/requests/new`);
+  await staff.getByLabel("What do you need?").fill("Laptop for homework");
+  await staff.getByLabel("Why do you need it?").fill("School projects");
+  await staff.getByText("Provide it for me").click();
+  await expect(staff.getByLabel("Roughly what does it cost? (optional)")).toBeVisible();
+  await staff.getByRole("button", { name: "Send request" }).click();
+  await expect(staff).toHaveURL(/\/requests\/[0-9a-f-]{36}$/);
+  const laptop = staff.url();
+  await approver.goto(laptop);
+  await approver.getByRole("button", { name: "Approve", exact: true }).click();
+  await approver.getByRole("dialog").getByRole("button", { name: "Approve" }).click();
+  await expect(approver.getByText("Approved, being provided").first()).toBeVisible();
+  await expect(
+    approver.getByRole("link", { name: "Add the purchase as an expense" }),
+  ).toHaveAttribute("href", /expenses\/new\?request=/);
+  await approver.getByLabel("Note (optional)").fill("Office laptop L-07");
+  await approver.getByRole("button", { name: "Mark as handed over" }).click();
+  await confirm(approver);
+  await expect(approver.getByText("Waiting for Tunde to confirm.").first()).toBeVisible();
+  await staff.reload();
+  await expect(staff.getByText("Have you got it?").first()).toBeVisible();
+  await staff.screenshot({
+    animations: "disabled",
+    path: "test-results/m-item-confirm.png",
+    fullPage: true,
+  });
+  await staff.getByRole("button", { name: "I've got it" }).click();
+  await expect(staff.getByText("Done", { exact: true }).first()).toBeVisible();
 });

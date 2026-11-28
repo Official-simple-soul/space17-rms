@@ -3,8 +3,10 @@ import {
   Building2,
   ChevronRight,
   CircleCheck,
+  CircleHelp,
   ClipboardList,
   FileText,
+  Package,
   Plus,
   Receipt,
   ShieldCheck,
@@ -16,13 +18,13 @@ import Link from "next/link";
 import { Card, PageHeader } from "@/components/ui/surface";
 import { getMyWork } from "@/features/requests/repository";
 import { SetupChecklist, SetupWarnings } from "@/features/setup/components/setup-checklist";
+import { SetupNudge } from "@/features/setup/components/setup-nudge";
 import { getSetupCounts, listSetupWarnings } from "@/features/setup/repository";
 import { describeWarning } from "@/features/setup/warnings";
 import { opens } from "@/lib/auth/access";
 import { GuidedTour, TourButton, type TourStep } from "@/features/tour/components/guided-tour";
 import { tourNeeded } from "@/features/tour/repository";
 import { getOrganisationContext } from "@/lib/auth/session";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -51,6 +53,46 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
             value: work.returned,
             icon: Undo2,
             href: `${base}/requests?status=returned`,
+          },
+        ]
+      : []),
+    ...(work.to_collect > 0
+      ? [
+          {
+            label: "Items to collect",
+            value: work.to_collect,
+            icon: Package,
+            href: `${base}/requests?status=handed_over`,
+          },
+        ]
+      : []),
+    ...(work.to_hand_over > 0
+      ? [
+          {
+            label: "Items to hand over",
+            value: work.to_hand_over,
+            icon: Package,
+            href: `${base}/requests?tab=all&status=to_hand_over`,
+          },
+        ]
+      : []),
+    ...(work.questions > 0
+      ? [
+          {
+            label: "Questions for you",
+            value: work.questions,
+            icon: CircleHelp,
+            href: `${base}/notifications`,
+          },
+        ]
+      : []),
+    ...(can("reports.review")
+      ? [
+          {
+            label: "Reports to check",
+            value: work.reports_to_review,
+            icon: ClipboardList,
+            href: `${base}/reports?status=under_review`,
           },
         ]
       : []),
@@ -228,81 +270,77 @@ export default async function DashboardPage({ params }: PageProps<"/o/[orgSlug]"
       <PageHeader
         title={`Hello, ${session.name.split(" ")[0]}`}
         description={`Here's where ${organisation.name} stands.`}
-        action={<TourButton />}
-      />
-      <div className={cn(setup && "grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]")}>
-        {setup && (
-          // First on phones; beside the figures on wide screens, so it's seen without scrolling.
-          <section
-            aria-label="Setup"
-            data-tour="setup"
-            className="space-y-6 lg:sticky lg:top-6 lg:order-2"
-          >
-            <SetupWarnings warnings={shownWarnings} />
-            {setupLeft && <SetupChecklist steps={steps} />}
-          </section>
-        )}
-        <div className="min-w-0 lg:order-1">
-          {can("requests.create") && (
-            <Link
-              href={`${base}/requests/new`}
-              data-tour="ask"
-              className="group rounded-card mb-6 block focus-visible:outline-offset-4"
-            >
-              <Card className="lift flex items-center gap-5 p-5 sm:p-6">
-                <span className="from-brand grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br to-[#c01526] text-white shadow-[0_8px_20px_-8px_rgb(163_13_26/0.7)] transition-transform duration-300 ease-(--ease-spring) group-hover:scale-105 group-hover:-rotate-3">
-                  <Plus className="size-7" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-semibold">Ask for something</span>
-                  <span className="text-muted block text-sm">
-                    Say what you need and why. Someone will approve it.
-                  </span>
-                </span>
-                <ChevronRight
-                  className="text-muted size-5 shrink-0 transition-transform group-hover:translate-x-1"
-                  aria-hidden
-                />
-              </Card>
-            </Link>
-          )}
-          <div
-            className={cn(
-              "stagger grid grid-cols-2 gap-3 sm:gap-4",
-              setup ? "2xl:grid-cols-3" : "lg:grid-cols-3",
-            )}
-          >
-            {tasks.map(({ label, value, icon: Icon, href }) => (
-              <Link key={label} href={href} className="group rounded-card block">
-                <Card className="lift h-full p-4 sm:p-5">
-                  <div className="text-muted flex items-start justify-between gap-2 text-sm">
-                    {label}
-                    <span className="bg-brand-soft text-brand grid size-8 place-items-center rounded-xl transition-transform duration-300 ease-(--ease-spring) group-hover:scale-110 group-hover:-rotate-6">
-                      <Icon className="size-4" aria-hidden />
-                    </span>
-                  </div>
-                  <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums sm:mt-5 sm:text-3xl">
-                    {value}
-                  </p>
-                </Card>
-              </Link>
-            ))}
-            {stats.map(({ label, value, icon: Icon }) => (
-              <Card key={label} className="h-full p-4 sm:p-5">
-                <div className="text-muted flex items-start justify-between gap-2 text-sm">
-                  {label}
-                  <span className="bg-ink/[0.05] grid size-8 place-items-center rounded-xl">
-                    <Icon className="size-4" aria-hidden />
-                  </span>
-                </div>
-                <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums sm:mt-5 sm:text-3xl">
-                  {value}
-                </p>
-              </Card>
-            ))}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {setupLeft && manage && <SetupNudge left={steps.filter((x) => !x.done).length} />}
+            <TourButton />
           </div>
-        </div>
+        }
+      />
+      {can("requests.create") && (
+        <Link
+          href={`${base}/requests/new`}
+          data-tour="ask"
+          className="group rounded-card mb-6 block focus-visible:outline-offset-4"
+        >
+          <Card className="lift flex items-center gap-5 p-5 sm:p-6">
+            <span className="from-brand grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br to-[#c01526] text-white shadow-[0_8px_20px_-8px_rgb(163_13_26/0.7)] transition-transform duration-300 ease-(--ease-spring) group-hover:scale-105 group-hover:-rotate-3">
+              <Plus className="size-7" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-lg font-semibold">Ask for something</span>
+              <span className="text-muted block text-sm">
+                Say what you need and why. Someone will approve it.
+              </span>
+            </span>
+            <ChevronRight
+              className="text-muted size-5 shrink-0 transition-transform group-hover:translate-x-1"
+              aria-hidden
+            />
+          </Card>
+        </Link>
+      )}
+      <div className="stagger grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        {tasks.map(({ label, value, icon: Icon, href }) => (
+          <Link key={label} href={href} className="group rounded-card block">
+            <Card className="lift h-full p-4 sm:p-5">
+              <div className="text-muted flex items-start justify-between gap-2 text-sm">
+                {label}
+                <span className="bg-brand-soft text-brand grid size-8 place-items-center rounded-xl transition-transform duration-300 ease-(--ease-spring) group-hover:scale-110 group-hover:-rotate-6">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+              </div>
+              <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums sm:mt-5 sm:text-3xl">
+                {value}
+              </p>
+            </Card>
+          </Link>
+        ))}
+        {stats.map(({ label, value, icon: Icon }) => (
+          <Card key={label} className="h-full p-4 sm:p-5">
+            <div className="text-muted flex items-start justify-between gap-2 text-sm">
+              {label}
+              <span className="bg-ink/[0.05] grid size-8 place-items-center rounded-xl">
+                <Icon className="size-4" aria-hidden />
+              </span>
+            </div>
+            <p className="mt-4 text-2xl font-semibold tracking-tight tabular-nums sm:mt-5 sm:text-3xl">
+              {value}
+            </p>
+          </Card>
+        ))}
       </div>
+      {setup && (
+        <section
+          id="setup"
+          aria-label="Setup"
+          data-tour="setup"
+          className="rounded-card mt-6 scroll-mt-6 space-y-6"
+        >
+          <SetupWarnings warnings={shownWarnings} />
+          {setupLeft && <SetupChecklist steps={steps} />}
+        </section>
+      )}
       <GuidedTour orgId={organisation.id} steps={tour} autoStart={firstVisit} />
     </>
   );

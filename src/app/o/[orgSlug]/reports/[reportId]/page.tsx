@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, PageHeader } from "@/components/ui/surface";
+import { Card, Notice, PageHeader } from "@/components/ui/surface";
 import { MarkRead } from "@/features/notifications/components/mark-read";
 import {
   ReportLines,
@@ -9,6 +9,7 @@ import {
   ReportTimeline,
 } from "@/features/reports/components/report-details";
 import { ReportEditor } from "@/features/reports/components/report-editor";
+import { ReviewPanel } from "@/features/reports/components/report-review";
 import { ReportStatusBadge } from "@/features/reports/components/report-status";
 import { getReport } from "@/features/reports/repository";
 import { getMyWork } from "@/features/requests/repository";
@@ -20,7 +21,7 @@ export const metadata: Metadata = { title: "Report" };
 
 export default async function ReportPage({ params }: PageProps<"/o/[orgSlug]/reports/[reportId]">) {
   const { orgSlug, reportId } = await params;
-  const { organisation } = await getOrganisationContext(orgSlug);
+  const { session, organisation } = await getOrganisationContext(orgSlug);
   const [report, work] = await Promise.all([
     getReport(organisation.id, reportId),
     getMyWork(organisation.id),
@@ -42,12 +43,44 @@ export default async function ReportPage({ params }: PageProps<"/o/[orgSlug]/rep
         }
         action={<ReportStatusBadge status={report.status} overdue={report.overdue} />}
       />
+      {report.status === "under_review" &&
+        !report.can_review &&
+        report.lines.some((l) => l.thread?.status === "open" && l.can_message) && (
+          <div className="mb-6">
+            <Notice tone="alert">
+              Finance has a question about{" "}
+              {report.lines.filter((l) => l.thread?.status === "open").length === 1
+                ? "an expense"
+                : "some expenses"}{" "}
+              below. Open it to answer.
+            </Notice>
+          </div>
+        )}
       <ReportSummary report={report} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="space-y-6">
           <ReportLines report={report} base={base} />
         </div>
         <div className="space-y-6 lg:sticky lg:top-6">
+          {report.can_review && (
+            <Card className="space-y-4 p-6">
+              <h2 className="font-semibold">Your review</h2>
+              {session.aal !== "aal2" && (
+                <Notice>
+                  Approving or returning needs two-step verification.{" "}
+                  <Link href="/account" className="font-medium underline">
+                    Set it up
+                  </Link>
+                </Notice>
+              )}
+              <ReviewPanel report={report} />
+            </Card>
+          )}
+          {report.own_report && report.status === "under_review" && (
+            <Notice>
+              Finance is checking this report. We&apos;ll tell you when it&apos;s decided.
+            </Notice>
+          )}
           {report.can_edit ? (
             <ReportEditor
               // A changed report starts again from what was saved.

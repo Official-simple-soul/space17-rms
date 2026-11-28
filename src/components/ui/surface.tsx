@@ -1,8 +1,20 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <section className={cn("rounded-card glass border", className)}>{children}</section>;
+export function Card({
+  className,
+  children,
+  id,
+}: {
+  className?: string;
+  children: React.ReactNode;
+  id?: string;
+}) {
+  return (
+    <section id={id} className={cn("rounded-card glass border", className)}>
+      {children}
+    </section>
+  );
 }
 
 export function PageHeader({

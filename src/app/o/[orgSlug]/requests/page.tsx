@@ -8,7 +8,7 @@ import { listCategories } from "@/features/categories/repository";
 import { listDepartments } from "@/features/departments/repository";
 import { getOrganisation } from "@/features/organisations/repository";
 import { RequestsView } from "@/features/requests/components/requests-view";
-import { listRequests } from "@/features/requests/repository";
+import { countWaiting, listRequests } from "@/features/requests/repository";
 import { requireSection } from "@/lib/auth/access";
 import { getListView } from "@/lib/list-view";
 
@@ -25,10 +25,11 @@ export default async function RequestsPage({
     (p) => p.permission_key === "requests.view" && p.scope !== "own",
   );
   const creates = can("requests.create");
+  const waiting = seesMore ? await countWaiting(organisation.id) : 0;
   const tabs = [
     ...(creates ? [{ id: "mine", label: "My requests" }] : []),
-    ...(seesMore ? [{ id: "all", label: "All requests" }] : []),
-  ] as { id: "mine" | "all"; label: string }[];
+    ...(seesMore ? [{ id: "all", label: "All requests", badge: waiting }] : []),
+  ] as { id: "mine" | "all"; label: string; badge?: number }[];
   const base = `/o/${orgSlug}/requests`;
   const mode = tabs.find((t) => t.id === query.tab)?.id ?? tabs[0]?.id ?? "mine";
   const [requests, categories, departments, details, view] = await Promise.all([

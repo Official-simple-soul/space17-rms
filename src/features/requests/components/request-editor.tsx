@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronDown, UserCheck, TriangleAlert } from "lucide-react";
+import {
+  Banknote,
+  ChevronDown,
+  Package,
+  TriangleAlert,
+  UserCheck,
+  type LucideIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -19,10 +26,17 @@ import {
   type ItemDraft,
 } from "@/lib/line-items";
 import { uid } from "@/lib/uid";
+import { cn } from "@/lib/utils";
 import { useAutosave } from "@/lib/use-autosave";
 import { saveDraft, startUpload, submitRequest } from "../actions";
 import { checkDraft, type DraftErrors } from "../form";
-import type { Draft, RequestDetail, RequestOptions } from "../schema";
+import {
+  PROVISIONS,
+  type Draft,
+  type Provision,
+  type RequestDetail,
+  type RequestOptions,
+} from "../schema";
 
 type Props = {
   orgId: string;
@@ -59,6 +73,7 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
   const [categoryId, setCategoryId] = useState(request?.category?.id ?? "");
   const [neededBy, setNeededBy] = useState(request?.needed_by ?? "");
   const [supplier, setSupplier] = useState(request?.supplier ?? "");
+  const [provision, setProvision] = useState<Provision | "">(request?.provision ?? "");
   const [itemised, setItemised] = useState(start.itemised);
   const [amount, setAmount] = useState(start.amount);
   const [list, setList] = useState<ItemDraft[]>(start.items);
@@ -81,6 +96,7 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
     purpose,
     neededBy: neededBy || null,
     supplier,
+    provision: provision || null,
     items: fromItemDrafts(items),
   };
   const id = useRef(request?.id ?? null);
@@ -99,7 +115,7 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
     },
   });
 
-  const found = checkDraft({ title, purpose, departmentId, items, itemised });
+  const found = checkDraft({ title, purpose, provision, departmentId, items, itemised });
   // After the first attempt, each error clears as soon as it is corrected.
   const errors: DraftErrors | null = checked ? found : null;
   const department = departments.find((d) => d.id === departmentId);
@@ -188,9 +204,10 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
             onChange={(e) => setPurpose(e.target.value)}
             errors={one(errors?.purpose)}
           />
+          <ProvisionChoice value={provision} onChange={setProvision} error={errors?.provision} />
           {itemised ? (
             <div className="space-y-3">
-              <p className="text-sm font-medium">What will it cost?</p>
+              <p className="text-sm font-medium">{AMOUNT[provision || "money"].list}</p>
               <ItemFields
                 items={list}
                 onChange={setList}
@@ -215,11 +232,11 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
           ) : (
             <div className="space-y-2">
               <TextField
-                label="How much will it cost?"
+                label={AMOUNT[provision || "money"].label}
                 name="amount"
                 inputMode="decimal"
                 placeholder="For example, 25,000"
-                hint="Your best guess is fine."
+                hint={AMOUNT[provision || "money"].hint}
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 errors={one(errors?.amount)}
@@ -362,5 +379,83 @@ export function RequestEditor({ orgId, base, currency, request, options }: Props
         />
       </Card>
     </form>
+  );
+}
+
+const AMOUNT = {
+  money: {
+    label: "How much do you need?",
+    list: "What will it cost?",
+    hint: "Your best guess is fine.",
+  },
+  provide: {
+    label: "Roughly what does it cost? (optional)",
+    list: "What does it cost? (optional)",
+    hint: "Helps whoever approves it. Leave empty if you don't know.",
+  },
+} as const;
+
+const ICONS: Record<Provision, LucideIcon> = {
+  provide: Package,
+  money: Banknote,
+};
+
+/** How the request should be met, as three large choices. */
+function ProvisionChoice({
+  value,
+  onChange,
+  error,
+}: {
+  value: Provision | "";
+  onChange: (value: Provision) => void;
+  error?: string;
+}) {
+  return (
+    <fieldset className="space-y-2" aria-invalid={error ? true : undefined}>
+      <legend className="mb-1.5 text-sm font-medium">How should we get it to you?</legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {(Object.keys(PROVISIONS) as Provision[]).map((key) => {
+          const Icon = ICONS[key];
+          const chosen = value === key;
+          return (
+            <label
+              key={key}
+              className={cn(
+                "rounded-control flex cursor-pointer gap-3 border p-3 transition-all duration-200 sm:flex-col sm:gap-2",
+                chosen
+                  ? "border-brand/50 ring-brand/10 bg-white ring-4"
+                  : "border-ink/10 hover:border-ink/20 bg-white/60 hover:bg-white/80",
+              )}
+            >
+              <input
+                type="radio"
+                name="provision"
+                value={key}
+                checked={chosen}
+                onChange={() => onChange(key)}
+                className="sr-only"
+              />
+              <span
+                className={cn(
+                  "grid size-9 shrink-0 place-items-center rounded-xl transition-colors",
+                  chosen ? "bg-brand text-white" : "bg-ink/[0.05] text-muted",
+                )}
+              >
+                <Icon className="size-4.5" aria-hidden />
+              </span>
+              <span>
+                <span className="block text-sm font-medium">{PROVISIONS[key].label}</span>
+                <span className="text-muted block text-xs">{PROVISIONS[key].hint}</span>
+              </span>
+            </label>
+          );
+        })}
+      </div>
+      {error && (
+        <p role="alert" className="text-brand-strong text-xs font-medium">
+          {error}
+        </p>
+      )}
+    </fieldset>
   );
 }

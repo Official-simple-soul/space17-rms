@@ -3,14 +3,16 @@ import { cache } from "react";
 import { parseSort } from "@/lib/data-view";
 import { isId, loadPage, text, type Query } from "@/lib/server-page";
 import { createClient } from "@/lib/supabase/server";
-import { requestDetail, requestOptions, requestStatus } from "./schema";
+import { provision, requestDetail, requestOptions, requestStatus } from "./schema";
 
 export type RequestView = "mine" | "all" | "inbox";
 
 export async function listRequests(orgId: string, view: RequestView, query: Query) {
   const supabase = await createClient();
   const sort = parseSort(text(query.sort));
-  const status = requestStatus.safeParse(text(query.status));
+  // "to_hand_over" lists items ready to be given out.
+  const wanted = text(query.status);
+  const status = wanted === "to_hand_over" ? { data: wanted } : requestStatus.safeParse(wanted);
   const [category, department] = [text(query.category), text(query.department)];
   const { rows, server } = await loadPage(query, async (range) => {
     const { data, error } = await supabase.rpc("list_requests", {
@@ -37,6 +39,7 @@ export async function listRequests(orgId: string, view: RequestView, query: Quer
       category: r.category,
       department: r.department,
       status: requestStatus.parse(r.status),
+      provision: provision.parse(r.provision),
       amount: r.approved_minor ?? r.total_minor,
       waitingSince: r.waiting_since ?? "",
       date: r.submitted_at ?? r.updated_at,
@@ -51,6 +54,14 @@ export async function getRequest(orgId: string, id: string) {
   if (error) throw new Error("Could not load request");
   const request = requestDetail.parse(data);
   return request.org_id === orgId ? request : null;
+}
+
+/** Submitted requests the caller can see that are still waiting for approval. */
+export async function countWaiting(orgId: string) {
+  const { data, error } = await (
+    await createClient()
+  ).rpc("list_requests", { p_org: orgId, p_view: "all", p_status: "pending", p_limit: 1 });
+  return error ? 0 : Number(data[0]?.total ?? 0);
 }
 
 /** The caller's departments, with who approves each, and the category labels. */

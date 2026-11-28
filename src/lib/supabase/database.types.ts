@@ -553,6 +553,32 @@ isOneToOne: false
       referencedColumns: ["org_id","id"]
     }
                   ]
+                },"messages": {
+                  Row: {
+                    "author_id": string,"body": string,"created_at": string,"id": number,"is_question": boolean,"org_id": string,"thread_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"body": string,"created_at"?: string,"id"?: never,"is_question"?: boolean,"org_id": string,"thread_id": string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"created_at"?: string,"id"?: never,"is_question"?: boolean,"org_id"?: string,"thread_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "messages_org_id_author_id_fkey"
+      columns: ["org_id","author_id"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "messages_org_id_thread_id_fkey"
+      columns: ["org_id","thread_id"]
+isOneToOne: false
+      referencedRelation: "threads"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 },"notifications": {
                   Row: {
                     "created_at": string,"expense_line_id": string | null,"id": string,"membership_id": string,"org_id": string,"payload": NonNullable<Json>,"read_at": string | null,"report_id": string | null,"request_id": string | null,"type": string
@@ -839,17 +865,23 @@ isOneToOne: false
                   ]
                 },"reports": {
                   Row: {
-                    "created_at": string,"department_id": string,"id": string,"kind": string,"lock_version": number,"number": string | null,"org_id": string,"period_id": string,"status": string,"submitted_at": string | null,"submitted_by": string | null,"summary": string,"updated_at": string
+                    "created_at": string,"decided_at": string | null,"decided_by": string | null,"department_id": string,"id": string,"kind": string,"lock_version": number,"number": string | null,"org_id": string,"period_id": string,"status": string,"submitted_at": string | null,"submitted_by": string | null,"summary": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"department_id": string,"id"?: string,"kind"?: string,"lock_version"?: number,"number"?: string | null,"org_id": string,"period_id": string,"status"?: string,"submitted_at"?: string | null,"submitted_by"?: string | null,"summary"?: string,"updated_at"?: string
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"department_id": string,"id"?: string,"kind"?: string,"lock_version"?: number,"number"?: string | null,"org_id": string,"period_id": string,"status"?: string,"submitted_at"?: string | null,"submitted_by"?: string | null,"summary"?: string,"updated_at"?: string
                   }
                   Update: {
-                    "created_at"?: string,"department_id"?: string,"id"?: string,"kind"?: string,"lock_version"?: number,"number"?: string | null,"org_id"?: string,"period_id"?: string,"status"?: string,"submitted_at"?: string | null,"submitted_by"?: string | null,"summary"?: string,"updated_at"?: string
+                    "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"department_id"?: string,"id"?: string,"kind"?: string,"lock_version"?: number,"number"?: string | null,"org_id"?: string,"period_id"?: string,"status"?: string,"submitted_at"?: string | null,"submitted_by"?: string | null,"summary"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "reports_decided_by_fkey"
+      columns: ["org_id","decided_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
       foreignKeyName: "reports_org_id_department_id_fkey"
       columns: ["org_id","department_id"]
 isOneToOne: false
@@ -917,17 +949,23 @@ isOneToOne: false
                   ]
                 },"requests": {
                   Row: {
-                    "approved_minor": number | null,"category_id": string | null,"closed_at": string | null,"created_at": string,"decided_at": string | null,"department_id": string | null,"id": string,"lock_version": number,"needed_by": string | null,"number": string | null,"org_id": string,"preferred_supplier": string,"purpose": string,"requester_id": string,"status": string,"submitted_at": string | null,"title": string,"total_minor": number,"updated_at": string
+                    "approved_minor": number | null,"category_id": string | null,"closed_at": string | null,"created_at": string,"decided_at": string | null,"department_id": string | null,"handed_over_at": string | null,"handed_over_by": string | null,"handover_note": string | null,"id": string,"item_received_at": string | null,"lock_version": number,"needed_by": string | null,"number": string | null,"org_id": string,"preferred_supplier": string,"provision": string | null,"purpose": string,"requester_id": string,"status": string,"submitted_at": string | null,"title": string,"total_minor": number,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_minor"?: number | null,"category_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"decided_at"?: string | null,"department_id"?: string | null,"id"?: string,"lock_version"?: number,"needed_by"?: string | null,"number"?: string | null,"org_id": string,"preferred_supplier"?: string,"purpose"?: string,"requester_id": string,"status"?: string,"submitted_at"?: string | null,"title"?: string,"total_minor"?: number,"updated_at"?: string
+                    "approved_minor"?: number | null,"category_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"decided_at"?: string | null,"department_id"?: string | null,"handed_over_at"?: string | null,"handed_over_by"?: string | null,"handover_note"?: string | null,"id"?: string,"item_received_at"?: string | null,"lock_version"?: number,"needed_by"?: string | null,"number"?: string | null,"org_id": string,"preferred_supplier"?: string,"provision"?: string | null,"purpose"?: string,"requester_id": string,"status"?: string,"submitted_at"?: string | null,"title"?: string,"total_minor"?: number,"updated_at"?: string
                   }
                   Update: {
-                    "approved_minor"?: number | null,"category_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"decided_at"?: string | null,"department_id"?: string | null,"id"?: string,"lock_version"?: number,"needed_by"?: string | null,"number"?: string | null,"org_id"?: string,"preferred_supplier"?: string,"purpose"?: string,"requester_id"?: string,"status"?: string,"submitted_at"?: string | null,"title"?: string,"total_minor"?: number,"updated_at"?: string
+                    "approved_minor"?: number | null,"category_id"?: string | null,"closed_at"?: string | null,"created_at"?: string,"decided_at"?: string | null,"department_id"?: string | null,"handed_over_at"?: string | null,"handed_over_by"?: string | null,"handover_note"?: string | null,"id"?: string,"item_received_at"?: string | null,"lock_version"?: number,"needed_by"?: string | null,"number"?: string | null,"org_id"?: string,"preferred_supplier"?: string,"provision"?: string | null,"purpose"?: string,"requester_id"?: string,"status"?: string,"submitted_at"?: string | null,"title"?: string,"total_minor"?: number,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "requests_handed_over_by_fkey"
+      columns: ["org_id","handed_over_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    },{
       foreignKeyName: "requests_org_id_category_id_fkey"
       columns: ["org_id","category_id"]
 isOneToOne: false
@@ -1019,6 +1057,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"threads": {
+                  Row: {
+                    "created_at": string,"expense_line_id": string | null,"id": string,"kind": string,"org_id": string,"report_id": string | null,"request_id": string | null,"resolved_at": string | null,"resolved_by": string | null,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"expense_line_id"?: string | null,"id"?: string,"kind": string,"org_id": string,"report_id"?: string | null,"request_id"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"expense_line_id"?: string | null,"id"?: string,"kind"?: string,"org_id"?: string,"report_id"?: string | null,"request_id"?: string | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "threads_org_id_expense_line_id_fkey"
+      columns: ["org_id","expense_line_id"]
+isOneToOne: false
+      referencedRelation: "expense_lines"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "threads_org_id_report_id_fkey"
+      columns: ["org_id","report_id"]
+isOneToOne: false
+      referencedRelation: "reports"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "threads_org_id_request_id_fkey"
+      columns: ["org_id","request_id"]
+isOneToOne: false
+      referencedRelation: "requests"
+      referencedColumns: ["org_id","id"]
+    },{
+      foreignKeyName: "threads_org_id_resolved_by_fkey"
+      columns: ["org_id","resolved_by"]
+isOneToOne: false
+      referencedRelation: "memberships"
+      referencedColumns: ["org_id","id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -1061,8 +1137,8 @@ isOneToOne: false
               "attempt": number,"email": string,"expense_id": string,"id": string,"name": string,"org_name": string,"org_slug": string,"payload": Json,"report_id": string,"request_id": string,"type": string
             }[]
                            },
-"comment_on_request":
-{ Args: { "p_body": string,"p_id": string }; Returns: undefined
+"confirm_item":
+{ Args: { "p_id": string,"p_lock": number }; Returns: undefined
                            },
 "confirm_payment":
 { Args: { "p_id": string }; Returns: undefined
@@ -1138,6 +1214,9 @@ isOneToOne: false
 "grant_role":
 { Args: { "p_department"?: string,"p_membership": string,"p_org": string,"p_role": string,"p_until"?: string }; Returns: undefined
                            },
+"hand_over_item":
+{ Args: { "p_id": string,"p_lock": number,"p_note"?: string }; Returns: undefined
+                           },
 "invite_member":
 { Args: { "p_department"?: string,"p_email": string,"p_org": string,"p_role": string }; Returns: string
                            },
@@ -1188,7 +1267,7 @@ isOneToOne: false
                            },
 "list_requests":
 { Args: { "p_category"?: string,"p_department"?: string,"p_desc"?: boolean,"p_limit"?: number,"p_offset"?: number,"p_org": string,"p_search"?: string,"p_sort"?: string,"p_status"?: string,"p_view"?: string }; Returns: {
-              "approved_minor": number,"category": string,"department": string,"id": string,"number": string,"requester": string,"status": string,"submitted_at": string,"title": string,"total": number,"total_minor": number,"updated_at": string,"waiting_since": string
+              "approved_minor": number,"category": string,"department": string,"id": string,"number": string,"provision": string,"requester": string,"status": string,"submitted_at": string,"title": string,"total": number,"total_minor": number,"updated_at": string,"waiting_since": string
             }[]
                            },
 "mark_notifications_read":
@@ -1221,7 +1300,7 @@ isOneToOne: false
                            },
 "my_work":
 { Args: { "p_org": string }; Returns: {
-              "approvals": number,"expenses_returned": number,"expenses_waiting": number,"join_requests": number,"open_requests": number,"reports_due": number,"returned": number,"to_confirm": number,"to_pay": number,"unread": number
+              "approvals": number,"expenses_returned": number,"expenses_waiting": number,"join_requests": number,"open_requests": number,"questions": number,"reports_due": number,"reports_to_review": number,"returned": number,"to_collect": number,"to_confirm": number,"to_hand_over": number,"to_pay": number,"unread": number
             }[]
                            },
 "open_report":
@@ -1271,8 +1350,14 @@ isOneToOne: false
 "request_options":
 { Args: { "p_org": string }; Returns: Json
                            },
+"resolve_line_question":
+{ Args: { "p_line": string }; Returns: undefined
+                           },
 "reveal_bank_account":
 { Args: { "p_request": string }; Returns: string
+                           },
+"review_report":
+{ Args: { "p_action": string,"p_id": string,"p_lock": number,"p_reason"?: string }; Returns: undefined
                            },
 "revoke_invitation":
 { Args: { "p_id": string,"p_org": string }; Returns: undefined
@@ -1307,10 +1392,16 @@ isOneToOne: false
 { Args: { "p_id": string,"p_lock": number,"p_summary": string }; Returns: Json
                            },
 "save_request":
-{ Args: { "p_category": string,"p_department": string,"p_id": string,"p_items": Json,"p_lock": number,"p_needed_by": string,"p_org": string,"p_purpose": string,"p_supplier": string,"p_title": string }; Returns: Json
+{ Args: { "p_category": string,"p_department": string,"p_id": string,"p_items": Json,"p_lock": number,"p_needed_by": string,"p_org": string,"p_provision"?: string,"p_purpose": string,"p_supplier": string,"p_title": string }; Returns: Json
                            },
 "save_role":
 { Args: { "p_id": string,"p_name": string,"p_org": string,"p_permissions": Json }; Returns: string
+                           },
+"send_line_message":
+{ Args: { "p_body": string,"p_line": string }; Returns: undefined
+                           },
+"send_request_message":
+{ Args: { "p_body": string,"p_id": string,"p_question"?: boolean }; Returns: undefined
                            },
 "set_join_code":
 { Args: { "p_enabled": boolean,"p_org": string }; Returns: string

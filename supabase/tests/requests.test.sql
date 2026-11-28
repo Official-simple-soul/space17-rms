@@ -69,16 +69,16 @@ select is(request_options(pg_temp.v('org-a')) -> 'departments' -> 0 -> 'approver
 
 -- Drafts
 select pg_temp.login(4);
-select throws_ok($$ select save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, '', '', null, '', '[]', null) $$, '22023', 'department_unavailable', 'a department I am not in is refused');
-select throws_ok($$ select save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), pg_temp.v('old'), '', '', null, '', '[]', null) $$, '22023', 'category_unavailable', 'archived categories are refused');
-insert into t select 'r', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, '', '', null, '', '[]', null) ->> 'id';
+select throws_ok($$ select save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, '', '', null, '', '[]', null, p_provision => 'money') $$, '22023', 'department_unavailable', 'a department I am not in is refused');
+select throws_ok($$ select save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), pg_temp.v('old'), '', '', null, '', '[]', null, p_provision => 'money') $$, '22023', 'category_unavailable', 'archived categories are refused');
+insert into t select 'r', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, '', '', null, '', '[]', null, p_provision => 'money') ->> 'id';
 select throws_ok($$ select submit_request(pg_temp.v('r'), 1) $$, '22023', 'request_incomplete', 'an empty draft cannot be submitted');
 select is(save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), pg_temp.v('cat'), 'Printer paper', 'For the office', null, ' Office Mart ',
-  '[{"description":"Paper","quantity":2.5,"unit_price_minor":50000},{"description":"Ink","quantity":1,"unit_price_minor":25000}]', 1) ->> 'version', '2', 'saving moves the version');
+  '[{"description":"Paper","quantity":2.5,"unit_price_minor":50000},{"description":"Ink","quantity":1,"unit_price_minor":25000}]', 1, p_provision => 'money') ->> 'version', '2', 'saving moves the version');
 select is((get_request(pg_temp.v('r')) ->> 'total_minor')::bigint, 150000::bigint, 'the database calculates the total');
 select is(get_request(pg_temp.v('r')) ->> 'supplier', 'Office Mart', 'the preferred seller is kept');
-select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'Old', '', null, '', '[]', 1) $$, '22023', 'stale_request', 'an older tab cannot overwrite');
-select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'X', '', null, '', '[{"description":"A","quantity":-1,"unit_price_minor":5}]', 2) $$, '23514', null, 'negative quantities fail');
+select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'Old', '', null, '', '[]', 1, p_provision => 'money') $$, '22023', 'stale_request', 'an older tab cannot overwrite');
+select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'X', '', null, '', '[{"description":"A","quantity":-1,"unit_price_minor":5}]', 2, p_provision => 'money') $$, '23514', null, 'negative quantities fail');
 select pg_temp.login(1);
 select throws_ok($$ select get_request(pg_temp.v('r')) $$, 'P0002', 'not_found', 'drafts are private, even from admins');
 select is((select count(*)::int from list_requests(pg_temp.v('org-a'), 'all')), 0, 'drafts are not listed for others');
@@ -91,7 +91,7 @@ select lives_ok($$ select submit_request(pg_temp.v('r'), 2) $$, 'submits');
 select matches(get_request(pg_temp.v('r')) ->> 'number', '^REQ-\d{4}-0001$', 'a number is assigned');
 select is(jsonb_array_length(get_request(pg_temp.v('r')) -> 'steps'), 1, 'one approval is enough');
 select is(get_request(pg_temp.v('r')) -> 'steps' -> 0 -> 'people', '["User 2", "User 3"]'::jsonb, 'it names the department''s approvers');
-select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'Changed', 'Changed', null, '', '[]', pg_temp.lock('r')) $$, '22023', 'request_locked', 'a pending request cannot be edited');
+select throws_ok($$ select save_request(pg_temp.v('org-a'), pg_temp.v('r'), pg_temp.v('FLD'), null, 'Changed', 'Changed', null, '', '[]', pg_temp.lock('r'), p_provision => 'money') $$, '22023', 'request_locked', 'a pending request cannot be edited');
 select throws_ok($$ select decide_request(pg_temp.step('r'), pg_temp.lock('r'), 'approve', null) $$, '42501', 'own_request', 'nobody approves their own request');
 
 -- Visibility
@@ -101,7 +101,7 @@ select throws_ok($$ select * from list_requests(pg_temp.v('org-a'), 'all') $$, '
 select pg_temp.login(6);
 select throws_ok($$ select get_request(pg_temp.v('r')) $$, 'P0002', 'not_found', 'the head of another department cannot see it');
 select is((select count(*)::int from list_requests(pg_temp.v('org-a'), 'all')), 0, 'and it is not listed for them');
-select throws_ok($$ select comment_on_request(pg_temp.v('r'), 'Hello') $$, 'P0002', 'not_found', 'nor can they comment');
+select throws_ok($$ select send_request_message(pg_temp.v('r'), 'Hello') $$, 'P0002', 'not_found', 'nor can they comment');
 select pg_temp.login(7);
 select lives_ok($$ select get_request(pg_temp.v('r')) $$, 'finance sees the whole organisation');
 select ok((get_request(pg_temp.v('r')) ->> 'my_step') is null, 'but cannot decide');
@@ -130,13 +130,13 @@ select is((select string_agg(type, ',') from list_notifications(pg_temp.v('org-a
 select throws_ok($$ select withdraw_request(pg_temp.v('r'), pg_temp.lock('r'), 'Changed my mind') $$, '22023', 'request_locked', 'an approved request cannot be withdrawn');
 
 -- Return, edit and resubmit; an admin approves as backup
-insert into t select 'r2', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Pens', 'For the office', null, '', '[{"description":"Pens","quantity":1,"unit_price_minor":50000}]', null) ->> 'id';
+insert into t select 'r2', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Pens', 'For the office', null, '', '[{"description":"Pens","quantity":1,"unit_price_minor":50000}]', null, p_provision => 'money') ->> 'id';
 select submit_request(pg_temp.v('r2'), 1);
 select pg_temp.login(2);
 select decide_request(pg_temp.step('r2'), pg_temp.lock('r2'), 'return', 'Say which pens');
 select pg_temp.login(4);
 select is((select returned from my_work(pg_temp.v('org-a'))), 1::bigint, 'returned work is counted');
-select save_request(pg_temp.v('org-a'), pg_temp.v('r2'), pg_temp.v('FLD'), null, 'Blue pens', 'For the office', null, '', '[{"description":"Blue pens","quantity":1,"unit_price_minor":150000}]', pg_temp.lock('r2'));
+select save_request(pg_temp.v('org-a'), pg_temp.v('r2'), pg_temp.v('FLD'), null, 'Blue pens', 'For the office', null, '', '[{"description":"Blue pens","quantity":1,"unit_price_minor":150000}]', pg_temp.lock('r2'), p_provision => 'money');
 select submit_request(pg_temp.v('r2'), pg_temp.lock('r2'));
 select matches(get_request(pg_temp.v('r2')) ->> 'number', '-0002$', 'the number stays the same');
 reset role;
@@ -151,7 +151,7 @@ select is(get_request(pg_temp.v('r2')) ->> 'status', 'approved', 'approved by th
 
 -- Leavers lose their say at once; reassigning still works.
 select pg_temp.login(4);
-insert into t select 'r3', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Chairs', 'For the hall', null, '', '[{"description":"Chair","quantity":4,"unit_price_minor":20000}]', null) ->> 'id';
+insert into t select 'r3', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Chairs', 'For the hall', null, '', '[{"description":"Chair","quantity":4,"unit_price_minor":20000}]', null, p_provision => 'money') ->> 'id';
 select submit_request(pg_temp.v('r3'), 1);
 select pg_temp.login(1);
 select set_member_status(pg_temp.v('org-a'), pg_temp.v('m3'), 'suspended', 'On leave');
@@ -174,12 +174,12 @@ select is(get_request(pg_temp.v('r3')) ->> 'status', 'approved', 'the new approv
 
 -- Heads approve their own department; their own requests go to someone else.
 select pg_temp.login(7);
-insert into t select 'fin', save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, 'Calculator', 'For reconciliations', null, '', '[{"description":"Calculator","quantity":1,"unit_price_minor":15000}]', null) ->> 'id';
+insert into t select 'fin', save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, 'Calculator', 'For reconciliations', null, '', '[{"description":"Calculator","quantity":1,"unit_price_minor":15000}]', null, p_provision => 'money') ->> 'id';
 select submit_request(pg_temp.v('fin'), 1);
 select pg_temp.login(6);
 select is((select type from list_notifications(pg_temp.v('org-a'))), 'approval_needed', 'the head is alerted');
 select lives_ok($$ select decide_request(pg_temp.step('fin'), pg_temp.lock('fin'), 'approve', null) $$, 'the head approves');
-insert into t select 'own', save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, 'Desk', 'Mine is broken', null, '', '[{"description":"Desk","quantity":1,"unit_price_minor":90000}]', null) ->> 'id';
+insert into t select 'own', save_request(pg_temp.v('org-a'), null, pg_temp.v('FIN'), null, 'Desk', 'Mine is broken', null, '', '[{"description":"Desk","quantity":1,"unit_price_minor":90000}]', null, p_provision => 'money') ->> 'id';
 select submit_request(pg_temp.v('own'), 1);
 select pg_temp.login(1);
 select is((select count(*)::int from list_notifications(pg_temp.v('org-a')) where type = 'approval_needed'), 1, 'with no one else in the department, admins are alerted');
@@ -187,15 +187,15 @@ select lives_ok($$ select decide_request(pg_temp.step('own'), pg_temp.lock('own'
 
 -- Nobody else to approve fails before submitting.
 select pg_temp.login(5);
-insert into t select 'solo', save_request(pg_temp.v('org-b'), null, pg_temp.v('OFB'), null, 'Stamps', 'Post', null, '', '[{"description":"Stamps","quantity":1,"unit_price_minor":1000}]', null) ->> 'id';
+insert into t select 'solo', save_request(pg_temp.v('org-b'), null, pg_temp.v('OFB'), null, 'Stamps', 'Post', null, '', '[{"description":"Stamps","quantity":1,"unit_price_minor":1000}]', null, p_provision => 'money') ->> 'id';
 select is(request_options(pg_temp.v('org-b')) -> 'departments' -> 0 -> 'approvers', '[]'::jsonb, 'the form can warn early');
 select throws_ok($$ select submit_request(pg_temp.v('solo'), 1) $$, '22023', 'no_approver', 'the requester does not count as an approver');
 
 -- An amount is needed; withdraw
 select pg_temp.login(4);
-insert into t select 'r4', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Use the hall', 'Training day', null, '', '[]', null) ->> 'id';
+insert into t select 'r4', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Use the hall', 'Training day', null, '', '[]', null, p_provision => 'money') ->> 'id';
 select throws_ok($$ select submit_request(pg_temp.v('r4'), 1) $$, '22023', 'amount_missing', 'a request needs an amount');
-insert into t select 'r5', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Gold pens', 'For the office', null, '', '[{"description":"Pens","quantity":1,"unit_price_minor":5000}]', null) ->> 'id';
+insert into t select 'r5', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Gold pens', 'For the office', null, '', '[{"description":"Pens","quantity":1,"unit_price_minor":5000}]', null, p_provision => 'money') ->> 'id';
 select submit_request(pg_temp.v('r5'), 1);
 select lives_ok($$ select withdraw_request(pg_temp.v('r5'), pg_temp.lock('r5'), 'Not needed') $$, 'withdraws');
 select is(get_request(pg_temp.v('r5')) ->> 'status', 'cancelled', 'withdrawn');
@@ -203,9 +203,35 @@ select pg_temp.login(2);
 select is((select count(*)::int from list_requests(pg_temp.v('org-a'), 'inbox')), 0, 'and leaves the inbox');
 select throws_ok($$ select delete_draft(pg_temp.v('r5')) $$, 'P0002', 'not_found', 'others cannot delete');
 
+-- Questions and answers
+select pg_temp.login(4);
+insert into t select 'q', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Paint', 'For the hall', null, '', '[{"description":"Paint","quantity":2,"unit_price_minor":8000}]', null, p_provision => 'money') ->> 'id';
+select throws_ok($$ select send_request_message(pg_temp.v('q'), 'Hi') $$, '42501', 'not_allowed', 'drafts have no conversation');
+select submit_request(pg_temp.v('q'), 1);
+select throws_ok($$ select send_request_message(pg_temp.v('q'), 'Is this fine?', true) $$, '42501', 'not_allowed', 'the requester does not ask themselves');
+select pg_temp.login(2);
+select ok((get_request(pg_temp.v('q')) ->> 'can_ask')::boolean, 'an approver can ask');
+select lives_ok($$ select send_request_message(pg_temp.v('q'), 'Which colour?', true) $$, 'and asks');
+select is(get_request(pg_temp.v('q')) #>> '{chat,status}', 'open', 'it waits for the requester');
+select is(get_request(pg_temp.v('q')) #>> '{chat,messages,0,title}', 'Approver', 'with their part shown');
+select pg_temp.login(4);
+select ok(exists (select 1 from list_notifications(pg_temp.v('org-a')) n where n.type = 'request_question' and n.request_id = pg_temp.v('q')), 'the requester is asked');
+select is((select questions from my_work(pg_temp.v('org-a'))), 1::bigint, 'and it is counted for them');
+select lives_ok($$ select send_request_message(pg_temp.v('q'), 'White, please') $$, 'the requester answers');
+select is(get_request(pg_temp.v('q')) #>> '{chat,status}', 'answered', 'answered');
+select ok((get_request(pg_temp.v('q')) #>> '{chat,messages,1,mine}')::boolean, 'their own message is marked');
+select is((select questions from my_work(pg_temp.v('org-a'))), 0::bigint, 'nothing waiting now');
+select pg_temp.login(2);
+select ok(exists (select 1 from list_notifications(pg_temp.v('org-a')) n where n.type = 'request_comment' and n.request_id = pg_temp.v('q')), 'the approver hears back');
+select pg_temp.login(6);
+select throws_ok($$ select send_request_message(pg_temp.v('q'), 'Hi') $$, 'P0002', 'not_found', 'others cannot join in');
+reset role;
+select throws_ok($$ delete from messages $$, '42501', null, 'messages cannot be removed');
+set local role authenticated;
+
 -- Files
 select pg_temp.login(4);
-insert into t select 'r6', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Abuja trip', 'Site visit', null, '', '[{"description":"Bus fare","quantity":1,"unit_price_minor":30000}]', null) ->> 'id';
+insert into t select 'r6', save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), null, 'Abuja trip', 'Site visit', null, '', '[{"description":"Bus fare","quantity":1,"unit_price_minor":30000}]', null, p_provision => 'money') ->> 'id';
 select throws_ok($$ select start_attachment(pg_temp.v('r6'), 'quotation', 'x.exe', 'application/x-msdownload', 10) $$, '23514', null, 'unsafe file types fail');
 select throws_ok($$ select start_attachment(pg_temp.v('r6'), 'mode', 'x.pdf', 'application/pdf', 10) $$, 'P0002', 'not_found', 'files are a quotation or a general attachment');
 insert into t select 'a', start_attachment(pg_temp.v('r6'), 'quotation', 'quote.pdf', 'application/pdf', 10) ->> 'id';

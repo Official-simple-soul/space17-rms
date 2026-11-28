@@ -161,6 +161,8 @@ const EVENT = {
   paid: "recorded a payment",
   payment_voided: "voided a payment",
   payment_confirmed: "confirmed receiving a payment",
+  handed_over: "handed it over",
+  item_received: "confirmed receiving it",
 } as const;
 
 export function Timeline({

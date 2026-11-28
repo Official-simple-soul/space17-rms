@@ -44,6 +44,8 @@ test("admin sets up categories and numbering", async ({ page, browser }) => {
   await expect(page.getByText("Two-step verification is on.").first()).toBeVisible();
   await page.goto(base);
   await expect(page.getByText("1 person can record payments.").first()).toBeVisible();
+  await page.getByRole("button", { name: /Finish setting up/ }).click();
+  await expect(page.locator("#setup")).toHaveClass(/attention-flash/);
   await page.screenshot({
     animations: "disabled",
     path: "test-results/dashboard.png",

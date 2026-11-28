@@ -91,6 +91,7 @@ test("finance pays in parts, staff confirm, and bank details stay protected", as
     p_purpose: "Monthly supply",
     p_needed_by: null,
     p_supplier: "",
+    p_provision: "money",
     p_items: [{ description: "Paper", quantity: 1, unit_price_minor: 5_000_000 }],
     p_lock: null,
   });

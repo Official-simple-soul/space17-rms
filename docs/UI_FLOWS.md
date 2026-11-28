@@ -50,7 +50,11 @@ Written for anyone, including kitchen staff and children.
 3. **More options** holds needed-by date, category, where to buy it and a quotation. On phones and tablets, every upload also offers **Take photo**.
 4. The draft saves once something is typed. **Send request**; the number and timeline appear.
 
-**Track a request:** detail page shows status, next actor, items, comments, payments and timeline. Available actions: edit (draft/returned), withdraw (pending), confirm receipt (paid), add expenses (received).
+**How it is provided:** the form asks **How should we get it to you?**
+- **Provide it for me:** the organisation gives one it has, or buys one. Nothing is paid through the app; whoever buys it adds the purchase as an expense linked to the request, so it is in the monthly report (personal money is paid back like any expense). The amount is an optional estimate. Approved → Finance, the head or an approver marks it **handed over** → the requester taps **I've got it** → Done.
+- **Give me the money:** the money flow below, accounted for with expenses.
+
+**Track a request:** detail page shows status, next actor, items, payments, timeline and a **Conversation**: chat bubbles, open to everyone who can see the request. Anyone but the requester can send a message as a question; the requester gets a notification and email, a banner with **Answer it**, and a dashboard count until they reply. New messages appear while the page is open. Available actions: edit (draft/returned), withdraw (pending), confirm receipt (paid), add expenses (received).
 
 **Add an expense**
 1. Photograph or upload a receipt, or choose **No receipt available**.
@@ -90,7 +94,7 @@ If someone else has already acted, the page refreshes and explains. There is no 
 **Report review**
 1. Compliance list: departments by submitted, late and missing.
 2. Split view on desktop: lines on the left, evidence on the right. Stacked on mobile.
-3. Query lines, issue internal receipts, then approve or return.
+3. Ask about a line from its row: a side panel with the line's conversation. The head (or the person who entered it) answers there; the reviewer marks it resolved. Then approve (a note is required if any line has no receipt) or return with what needs to change. Approved lines are locked. Approving or returning needs two-step verification. Issuing internal receipts comes next.
 4. Open queries block approval; missing evidence requires a written reason.
 
 **Issue an internal receipt**

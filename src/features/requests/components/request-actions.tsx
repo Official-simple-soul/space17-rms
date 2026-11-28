@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/ui/action-form";
 import { TextArea, TextField } from "@/components/ui/field";
 import { FormDialog } from "@/components/ui/form-dialog";
 import { formatMoney, parseMoney } from "@/lib/format";
-import { addComment, decideRequest, deleteDraft, withdrawRequest } from "../actions";
+import { confirmItem, decideRequest, deleteDraft, handOverItem, withdrawRequest } from "../actions";
 import type { RequestDetail } from "../schema";
 
 type Item = RequestDetail["items"][number];
@@ -189,26 +189,45 @@ export function DeleteDraft({ id, slug }: { id: string; slug: string }) {
   );
 }
 
-export function CommentForm({ id, count }: { id: string; count: number }) {
+/** For Finance, the head or an approver: records that the item reached the requester. */
+export function HandOverForm({ request: r }: { request: RequestDetail }) {
   return (
     <ActionForm
-      action={addComment}
-      submit="Comment"
-      variant="outline"
-      size="sm"
-      className="space-y-3"
+      action={handOverItem}
+      submit="Mark as handed over"
+      variant="brand"
+      fullWidth
+      className="space-y-4"
+      confirm={{
+        title: `Hand this to ${r.requester}?`,
+        description: "They'll be asked to confirm they've got it.",
+      }}
     >
       {(state) => (
         <>
-          <input type="hidden" name="id" value={id} />
-          {/* A new comment remounts the field, clearing it. */}
+          <input type="hidden" name="id" value={r.id} />
+          <input type="hidden" name="lock" value={r.lock_version} />
           <TextArea
-            key={count}
-            label="Add a comment"
-            name="body"
-            maxLength={2000}
-            errors={state.fieldErrors?.body}
+            label="Note (optional)"
+            name="note"
+            maxLength={500}
+            hint="Such as a serial number or who delivered it."
+            errors={state.fieldErrors?.note}
           />
+        </>
+      )}
+    </ActionForm>
+  );
+}
+
+/** For the requester, once it has been handed over. */
+export function ConfirmItemForm({ request: r }: { request: RequestDetail }) {
+  return (
+    <ActionForm action={confirmItem} submit="I've got it" variant="brand" fullWidth>
+      {() => (
+        <>
+          <input type="hidden" name="id" value={r.id} />
+          <input type="hidden" name="lock" value={r.lock_version} />
         </>
       )}
     </ActionForm>

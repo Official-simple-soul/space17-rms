@@ -267,6 +267,30 @@
   animation: var(--animate-shimmer);
 }
 
+/* Draws the eye to something unfinished. */
+.attention-ring {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  animation: attention-ring 2.8s ease-in-out infinite;
+}
+@keyframes attention-ring {
+  50% {
+    outline-color: rgb(163 13 26 / 0.28);
+  }
+}
+.attention-flash {
+  animation: attention-flash 1.8s ease-out;
+}
+@keyframes attention-flash {
+  0%,
+  40% {
+    box-shadow: 0 0 0 4px rgb(163 13 26 / 0.35);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgb(163 13 26 / 0);
+  }
+}
+
 .aurora-blob {
   position: absolute;
   border-radius: 9999px;

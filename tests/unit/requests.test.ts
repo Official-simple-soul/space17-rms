@@ -7,6 +7,7 @@ import { contentMatches } from "@/lib/files/types";
 const valid = {
   title: "Rice",
   purpose: "For the kitchen",
+  provision: "money" as const,
   departmentId: "d",
   items: [{ key: "single", description: "Rice", quantity: "1", price: "25,000" }],
   itemised: false,
@@ -23,14 +24,24 @@ describe("request drafts", () => {
   });
   it("accepts a complete draft", () => expect(checkDraft(valid)).toBeNull());
   it("points at each problem in plain words", () => {
-    const errors = checkDraft({ ...valid, title: "", purpose: " ", departmentId: "", items: [] });
+    const errors = checkDraft({
+      ...valid,
+      title: "",
+      purpose: " ",
+      provision: "",
+      departmentId: "",
+      items: [],
+    });
     expect(errors).toMatchObject({
       title: "Say what you need.",
       purpose: "Say why you need it.",
+      provision: "Choose how you'd like it.",
       department: "Choose a department.",
       amount: "Enter how much it will cost.",
     });
   });
+  it("needs no amount for a provided item", () =>
+    expect(checkDraft({ ...valid, provision: "provide", items: [] })).toBeNull());
   it("checks each item when listed separately", () => {
     const items = [{ key: "i", description: "Rice", quantity: "0", price: "500" }];
     expect(checkDraft({ ...valid, itemised: true, items })?.items.i).toBeTruthy();

@@ -6,6 +6,7 @@ const schema = z
     title: z.string(),
     requester: z.string(),
     actor: z.string().nullish(),
+    line: z.string().nullish(),
   })
   .partial();
 export type NotificationPayload = z.infer<typeof schema>;

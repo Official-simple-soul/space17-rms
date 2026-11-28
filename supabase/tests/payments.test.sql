@@ -44,7 +44,7 @@ create function pg_temp.make(p_key text, p_user int, p_cat text) returns void la
 begin
   perform pg_temp.login(p_user);
   insert into t select p_key, save_request(pg_temp.v('org-a'), null, pg_temp.v('FLD'), pg_temp.v(p_cat), 'Request', 'For the office', null, '',
-    '[{"description":"Item","quantity":1,"unit_price_minor":100000}]', null) ->> 'id';
+    '[{"description":"Item","quantity":1,"unit_price_minor":100000}]', null, p_provision => 'money') ->> 'id';
   perform submit_request(pg_temp.v(p_key), 1);
   perform pg_temp.login(2);
   perform decide_request((get_request(pg_temp.v(p_key)) ->> 'active_step')::uuid, pg_temp.lock(p_key), 'approve', null);
@@ -80,7 +80,7 @@ select throws_ok($$ select reveal_bank_account(pg_temp.v('r')) $$, '42501', 'mfa
 select pg_temp.login(3);
 select is(reveal_bank_account(pg_temp.v('r')), '0123456789', 'finance reveals');
 reset role;
-select is((select count(*)::int from audit_logs where action = 'bank_details.revealed'), 1, 'every reveal is recorded');
+select is((select count(*)::int from audit_logs where action = 'bank_details.revealed' and org_id = pg_temp.v('org-a')), 1, 'every reveal is recorded');
 set local role authenticated;
 select pg_temp.login(4);
 select save_bank_account(pg_temp.v('org-a'), 'UBA', 'User 4', '1111111111');
@@ -163,14 +163,16 @@ select ok(not exists (select 1 from email_outbox o join notifications n on n.id 
 set local role authenticated;
 select throws_ok($$ select * from claim_emails(5) $$, '42501', null, 'clients cannot take emails');
 reset role;
-update notifications set read_at = now() where id = (select notification_id from email_outbox order by created_at, id limit 1);
+update notifications set read_at = now() where id = (select o.notification_id from email_outbox o
+  join notifications n on n.id = o.notification_id where n.org_id = pg_temp.v('org-a') order by o.created_at, o.id limit 1);
 set local role service_role;
 insert into t select 'e', (select id from claim_emails(1))::text;
 select is((select count(*)::int from claim_emails(50) where id = pg_temp.v('e')), 0, 'a claimed email is not taken twice');
 select finish_email(pg_temp.v('e'), 1::smallint, true);
 reset role;
 select is((select status from email_outbox where id = pg_temp.v('e')), 'sent', 'sent');
-select ok(exists (select 1 from email_outbox where status = 'skipped'), 'already read notifications are skipped');
+select ok(exists (select 1 from email_outbox o join notifications n on n.id = o.notification_id
+  where o.status = 'skipped' and n.org_id = pg_temp.v('org-a')), 'already read notifications are skipped');
 create temp table e2 as select id from email_outbox where status = 'pending' limit 1; grant select on e2 to service_role;
 set local role service_role;
 select finish_email((select id from e2), 9::smallint, true);

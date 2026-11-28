@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { thread } from "@/features/conversations/schema";
 import { evidence, expenseFlags, expenseStatus, funding } from "@/features/expenses/schema";
 import { attachment } from "@/features/files/schema";
 
 export const STATUSES = {
   draft: "In progress",
-  under_review: "Under review",
+  under_review: "With Finance",
   returned: "Returned",
   approved: "Approved",
 } as const;
@@ -40,6 +41,8 @@ export const reportDetail = z.object({
       flags: expenseFlags,
       by: z.string(),
       category: z.string().nullable(),
+      thread: thread.nullable(),
+      can_message: z.boolean(),
     }),
   ),
   attachments: z.array(attachment),
@@ -47,13 +50,18 @@ export const reportDetail = z.object({
   events: z.array(
     z.object({
       id: z.number(),
-      type: z.enum(["submitted"]),
+      type: z.enum(["submitted", "returned", "approved"]),
       actor: z.string(),
       body: z.string().nullable(),
       at: z.string(),
     }),
   ),
   can_edit: z.boolean(),
+  can_review: z.boolean(),
+  own_report: z.boolean(),
+  open_questions: z.number(),
+  decided_by: z.string().nullable(),
+  decided_at: z.string().nullable(),
 });
 export type ReportDetail = z.infer<typeof reportDetail>;
 

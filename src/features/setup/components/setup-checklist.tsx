@@ -7,7 +7,7 @@ type Step = { label: string; done: boolean; href: string };
 export function SetupChecklist({ steps }: { steps: Step[] }) {
   const done = steps.filter((s) => s.done).length;
   return (
-    <Card>
+    <Card className={done < steps.length ? "attention-ring" : undefined}>
       <div className="border-line border-b p-5">
         <h2 className="font-semibold">Set up your organisation</h2>
         <p className="text-muted mt-1 text-sm">

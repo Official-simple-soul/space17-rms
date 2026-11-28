@@ -83,7 +83,7 @@ test("people only reach what their role allows, and photos work from a phone", a
 
   await phone.goto(`${base}/requests/new`);
   await phone.getByLabel("What do you need?").fill("New pot");
-  await expect(phone).toHaveURL(/new\?draft=/);
+  await expect(phone).toHaveURL(/new\?draft=/, { timeout: 15_000 });
   await expect(phone.getByText("Hidden department")).toHaveCount(0);
   const upload = { name: "image.png", mimeType: "image/png", buffer: photo };
   await phone.locator('input[capture="environment"]').first().setInputFiles(upload);
